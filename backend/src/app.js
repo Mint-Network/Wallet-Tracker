@@ -21,7 +21,6 @@ import { EthBalanceEnricher } from "./domain/Enrichers/EthBalanceEnricher.js";
 const app = express();
 dotenv.config();
 // ---------- Composition root (DI): wire ETH strategy with balance enricher and RPC providers ----------
-// You need at least ETH_RPC_URL for ETH/Codex balance columns to appear. CODEX_RPC_URL is optional (shows 0 if missing).
 const ethRpcUrl = process.env.ETH_RPC_URL;
 const codexRpcUrl = process.env.CODEX_RPC_URL;
 console.log("On the appjs file the ethRpcUrl is ", ethRpcUrl);
