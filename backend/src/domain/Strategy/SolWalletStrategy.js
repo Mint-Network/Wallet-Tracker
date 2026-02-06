@@ -1,0 +1,46 @@
+import * as bip39 from "@scure/bip39";
+import { derivePath } from "ed25519-hd-key";
+import nacl from "tweetnacl";
+import bs58 from "bs58";
+import { WalletStrategyRegistry } from "../Factory/WalletStrategyRegistry.js";
+import { IWalletStrategy } from "./IWalletStrategy.js";
+import { InputType } from "../Types/InputType.js";
+
+/**
+ * Solana wallet derivation strategy (BIP44 path m/44'/501'/i'/0').
+ * Only MNEMONIC is supported; XPUB handler throws (Solana uses Ed25519, different from BIP32 xpub).
+ */
+export class SolWalletStrategy extends IWalletStrategy {
+  getInputHandlers() {
+    return {
+      [InputType.MNEMONIC]: {
+        deriveRoot: (input) => {
+          const seed = bip39.mnemonicToSeedSync(input);
+          return { seed };
+        },
+        deriveChildren: (root, count, startIdx) => {
+          return Array.from({ length: count }).map((_, i) => {
+            const path = `m/44'/501'/${startIdx + i}'/0'`;
+            const { key } = derivePath(path, root.seed.toString("hex"));
+            const kp = nacl.sign.keyPair.fromSeed(key);
+            return {
+              srNo: startIdx + i + 1,
+              path,
+              address: bs58.encode(kp.publicKey),
+            };
+          });
+        },
+      },
+      [InputType.XPUB]: {
+        deriveRoot: () => {
+          throw new Error("Unsupported input type for SOL (use MNEMONIC)");
+        },
+        deriveChildren: () => {
+          throw new Error("Unsupported input type for SOL (use MNEMONIC)");
+        },
+      },
+    };
+  }
+}
+
+WalletStrategyRegistry.register("SOL", SolWalletStrategy);
