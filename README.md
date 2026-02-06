@@ -58,8 +58,8 @@ npm -v
 ### 1. Clone the repo
 
 ```bash
-git clone <your-repo-url>
-cd wallet-tracker
+git clone https://github.com/danknooob/Wallet-Tracker
+cd Wallet-Tracker
 ```
 
 ### 2. Backend setup
