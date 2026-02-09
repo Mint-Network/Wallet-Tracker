@@ -71,11 +71,11 @@ cd backend && npm install
 # Create backend/.env (see Environment variables), then:
 npm run dev
 
-# Frontend (new terminal)
+# Frontend (new terminal) — opens Tauri desktop app
 cd frontend && npm install && npm run dev
 ```
 
-Open **http://localhost:5173**. For the desktop app, see [Desktop app (Tauri)](#desktop-app-tauri).
+The desktop app window opens automatically. For browser-only, use `npm run dev:web` in the frontend and open **http://localhost:5173**.
 
 ---
 
@@ -119,7 +119,7 @@ npm install
 npm run dev
 ```
 
-UI: **http://localhost:5173** (or the port Vite prints).
+**`npm run dev`** starts the **Tauri desktop app** (Vite + native window). For browser-only, run **`npm run dev:web`** and open **http://localhost:5173**.
 
 ### 4. Use the app
 
@@ -287,13 +287,9 @@ npm run tauri icon path/to/your-icon.png
 
 ### Development
 
-```bash
-cd frontend
-npm install
-npm run tauri:dev
-```
+From the frontend folder, **`npm run dev`** (or **`npm run tauri:dev`**) starts the Tauri window and the Vite dev server. Ensure the backend is running: `cd backend && npm run dev`.
 
-Starts the Tauri window with the Vite dev server. Ensure the backend is running: `cd backend && npm run dev`.
+For **browser-only** (no desktop window), use **`npm run dev:web`** and open http://localhost:5173.
 
 ### Build installers
 
