@@ -1,6 +1,9 @@
 # Wallet Tracker
 
-A full-stack app to **derive wallet addresses** for multiple blockchains from a **mnemonic** or **extended public key (xpub)**, with optional balance enrichment for Ethereum.
+Derive **multi-chain wallet addresses** from a mnemonic or extended public key (xpub). React + Express. Supports **ETH**, **BTC**, **LTC**, **BCH**, and **SOL**, with optional ETH/Codex balance enrichment.
+
+[![Node](https://img.shields.io/badge/Node-18%2B-green)](/)
+[![Tauri](https://img.shields.io/badge/Tauri-2-blue)](/)
 
 ---
 
@@ -9,12 +12,15 @@ A full-stack app to **derive wallet addresses** for multiple blockchains from a 
 - [What it does](#what-it-does)
 - [Tech stack](#tech-stack)
 - [Prerequisites](#prerequisites)
+- [Quick start](#quick-start)
 - [Clone and run](#clone-and-run)
-- [Environment variables (.env)](#environment-variables-env)
+- [Environment variables](#environment-variables)
 - [Using the app](#using-the-app)
 - [API overview](#api-overview)
 - [Project structure](#project-structure)
-- [Security and Git](#security-and-git)
+- [Desktop app (Tauri)](#desktop-app-tauri)
+- [Security](#security)
+- [Limitations](#limitations)
 
 ---
 
@@ -23,33 +29,53 @@ A full-stack app to **derive wallet addresses** for multiple blockchains from a 
 - **Derive addresses** for **ETH**, **BTC**, **LTC**, **BCH**, and **SOL** from:
   - a 12/24-word **mnemonic**, or  
   - an **extended public key (xpub)** (where the chain supports it).
-- **Pagination**: request a range of addresses using `startIdx` and `count`.
-- **ETH balances**: for Ethereum, optionally add `ethBalance` and `codexBalance` to each address (requires RPC URLs in `.env`).
+- **Pagination**: request a range of addresses with `startIdx` and `count`.
+- **ETH/Codex balances**: optionally show `ethBalance` and `codexBalance` per address (requires RPC URLs in backend `.env`).
 
 ---
 
 ## Tech stack
 
-| Layer   | Stack |
-|--------|--------|
-| Frontend | React, TypeScript, Vite |
-| Backend  | Node.js, Express |
+| Layer    | Stack |
+|----------|--------|
+| Frontend | React 19, TypeScript, Vite 7 |
+| Backend  | Node.js, Express 5 |
 | API docs | Swagger UI (OpenAPI 3) |
 | Domain   | Strategy pattern per currency; DI for enrichers and RPC providers |
+| Desktop  | Tauri 2 — native installers for Windows, macOS, Linux |
 
 ---
 
 ## Prerequisites
 
-- **Node.js** (v18 or newer recommended)
-- **npm** (or yarn/pnpm)
-
-Check versions:
+- **Node.js** v18+ and **npm**
+- **Rust** (only for building the Tauri desktop app): [rustup](https://rustup.rs/)
 
 ```bash
 node -v
 npm -v
+# If using Tauri:
+rustc --version
 ```
+
+---
+
+## Quick start
+
+```bash
+git clone https://github.com/danknooob/Wallet-Tracker
+cd Wallet-Tracker
+
+# Backend
+cd backend && npm install
+# Create backend/.env (see Environment variables), then:
+npm run dev
+
+# Frontend (new terminal)
+cd frontend && npm install && npm run dev
+```
+
+Open **http://localhost:5173**. For the desktop app, see [Desktop app (Tauri)](#desktop-app-tauri).
 
 ---
 
@@ -62,32 +88,30 @@ git clone https://github.com/danknooob/Wallet-Tracker
 cd Wallet-Tracker
 ```
 
-### 2. Backend setup
+### 2. Backend
 
 ```bash
 cd backend
 npm install
 ```
 
-Create your environment file (see [Environment variables](#environment-variables-env) below):
+Create **`backend/.env`** with your config (see [Environment variables](#environment-variables)). If the repo includes `backend/.env.example`, you can copy it:
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` and add your own values (do not commit `.env` or real URLs).
-
-Start the backend:
+Then edit `.env` with your values. Start the server:
 
 ```bash
 npm run dev
 ```
 
-The API runs at **http://localhost:5000** (or the `PORT` you set in `.env`).
+API base: **http://localhost:5000** (or the `PORT` in `.env`).
 
-### 3. Frontend setup
+### 3. Frontend
 
-In a new terminal, from the project root:
+In a **new terminal**, from the project root:
 
 ```bash
 cd frontend
@@ -95,49 +119,37 @@ npm install
 npm run dev
 ```
 
-The UI runs at **http://localhost:5173** (or the port Vite prints).
+UI: **http://localhost:5173** (or the port Vite prints).
 
 ### 4. Use the app
 
 - Open the frontend URL in your browser.
 - Choose **Mnemonic** or **Extended Public Key**, pick a **currency**, enter your value, and click **Show Addresses**.
-- For ETH, balances appear if you configured `ETH_RPC_URL` (and optionally `CODEX_RPC_URL`) in `backend/.env`.
+- Use **Prev** / **Next** for pagination. For ETH, balances appear when RPC URLs are set in `backend/.env`.
 
 ---
 
-## Environment variables (.env)
+## Environment variables
 
-**Important:** Real RPC URLs and secrets must stay in `.env` only. **Never commit `.env`** or put real URLs in the README or repo.
+Backend loads **`backend/.env`**. Never commit `.env` or put real URLs in the repo.
 
-The backend reads `.env` from the **backend** folder. Use the example file as a template:
+| Variable        | Required | Description |
+|----------------|----------|-------------|
+| `PORT`         | No       | Server port (default: `5000`) |
+| `NODE_ENV`     | No       | e.g. `development` or `production` |
+| `ETH_RPC_URL`  | For ETH balances | Ethereum JSON-RPC URL (Infura, Alchemy, etc.). If missing, ETH/Codex balance columns stay empty. |
+| `CODEX_RPC_URL`| No       | Codex chain RPC URL. If missing, `codexBalance` is returned as `0.0`. |
 
-```bash
-cd backend
-cp .env.example .env
-```
-
-Then edit `backend/.env` with your own values.
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `PORT` | No | Server port (default: `5000`) |
-| `NODE_ENV` | No | e.g. `development` or `production` |
-| `ETH_RPC_URL` | For ETH balances | Your Ethereum JSON-RPC URL (e.g. from Infura, Alchemy, or a public RPC). If missing, ETH/Codex balance columns stay empty. |
-| `CODEX_RPC_URL` | No | Your Codex chain RPC URL. If missing, `codexBalance` is returned as `0.0`. |
-
-**Example (placeholders only – replace with your own):**
+**Example (use your own values):**
 
 ```env
 PORT=5000
 NODE_ENV=development
-ETH_RPC_URL=https://your-eth-rpc-endpoint.example.com
-CODEX_RPC_URL=https://your-codex-rpc-endpoint.example.com
+ETH_RPC_URL=https://your-eth-rpc.example.com
+CODEX_RPC_URL=https://your-codex-rpc.example.com
 ```
 
-Where to get RPC URLs (examples; not endorsements):
-
-- Ethereum: Infura, Alchemy, QuickNode, or public endpoints like LlamaRPC.
-- Codex: your chain’s official docs or provider.
+RPC options: Infura, Alchemy, QuickNode, or public endpoints for Ethereum; your chain’s docs for Codex.
 
 ---
 
@@ -145,8 +157,8 @@ Where to get RPC URLs (examples; not endorsements):
 
 1. **Input type**: Mnemonic (12/24 words) or Extended Public Key.
 2. **Currency**: ETH, BTC, LTC, BCH, or SOL.
-3. **Value**: Paste your mnemonic or xpub (never use mainnet keys you care about on untrusted machines).
-4. **Show Addresses**: Fetches the first page; use **Prev** / **Next** for more.
+3. **Value**: Paste mnemonic or xpub (use test keys only; never production keys on untrusted machines).
+4. **Show Addresses**: Fetches the first page; **Prev** / **Next** for more.
 
 For ETH, the table shows **ETH Balance** and **Codex Balance** when the backend has the corresponding RPC URLs configured.
 
@@ -154,7 +166,7 @@ For ETH, the table shows **ETH Balance** and **Codex Balance** when the backend 
 
 ## API overview
 
-- **Swagger UI**: when the backend is running, open **http://localhost:5000/api-docs** to see and try the API.
+- **Swagger UI**: **http://localhost:5000/api-docs**
 - **OpenAPI JSON**: **http://localhost:5000/api-docs.json**
 
 ### POST `/api/wallet/fetch`
@@ -173,13 +185,13 @@ Derives addresses for the given currency and input.
 }
 ```
 
-| Field | Description |
-|-------|-------------|
-| `inputType` | `"MNEMONIC"` or `"XPUB"` |
+| Field       | Description |
+|------------|-------------|
+| `inputType`| `"MNEMONIC"` or `"XPUB"` |
 | `currency` | `"ETH"`, `"BTC"`, `"LTC"`, `"BCH"`, `"SOL"` |
-| `value` | Mnemonic phrase or xpub |
-| `count` | Number of addresses to derive (page size) |
-| `startIdx` | Starting index (for pagination) |
+| `value`    | Mnemonic phrase or xpub |
+| `count`    | Number of addresses (page size) |
+| `startIdx` | Starting index (pagination) |
 
 **Response (example):**
 
@@ -199,49 +211,112 @@ Derives addresses for the given currency and input.
 }
 ```
 
-`ethBalance` and `codexBalance` are only present when the backend has balance enrichment enabled (e.g. ETH strategy with RPC URLs set).
+`ethBalance` and `codexBalance` appear when balance enrichment is enabled (ETH strategy with RPC URLs set).
 
 ---
 
 ## Project structure
 
 ```text
-wallet-tracker/
-├── .gitignore              # Ignores node_modules, .env, build outputs
+Wallet-Tracker/
+├── .gitignore
 ├── README.md
 ├── backend/
-│   ├── .env                # Your secrets (create from .env.example, never commit)
-│   ├── .env.example        # Template with placeholder variable names
-│   ├── server.js           # Entry: loads .env, starts Express
+│   ├── .env                    # Your secrets (create locally, never commit)
+│   ├── server.js               # Entry: loads .env, starts Express
 │   ├── package.json
 │   └── src/
-│       ├── app.js          # Express app, CORS, Swagger, route mounting, DI wiring
-│       ├── routes/         # /api/wallet
+│       ├── app.js              # Express app, CORS, Swagger, routes, DI wiring
+│       ├── routes/             # /api/wallet
 │       ├── controllers/
 │       ├── services/
-│       ├── domain/         # Strategies, enrichers, providers, registry, types
-│       ├── docs/           # Swagger/OpenAPI spec
-│       └── utils/          # e.g. xpub normalisation
+│       ├── domain/              # Strategies, enrichers, providers, registry
+│       │   ├── Strategy/        # IWalletStrategy, ETH, BTC, LTC, BCH, SOL, Simple
+│       │   ├── Enrichers/       # IBalanceEnricher, EthBalanceEnricher
+│       │   ├── Providers/       # EthRpcProvider, CodexRpcProvider, ZeroBalanceProvider
+│       │   ├── Factory/         # WalletStrategyRegistry, WalletStrategyFactory
+│       │   └── Types/
+│       ├── docs/                # Swagger/OpenAPI spec
+│       └── utils/
 └── frontend/
     ├── package.json
     ├── index.html
-    └── src/
-        ├── main.tsx
-        ├── App.tsx
-        ├── index.css
-        └── pages/
-            ├── AddressGeneratorPage.tsx
-            └── AddressGeneratorPage.css
+    ├── scripts/
+    │   └── generate-icons.js   # Generates icon.ico for Tauri (run if missing)
+    ├── src/
+    │   ├── main.tsx
+    │   ├── App.tsx
+    │   ├── index.css
+    │   └── pages/
+    │       ├── AddressGeneratorPage.tsx
+    │       └── AddressGeneratorPage.css
+    └── src-tauri/               # Tauri 2 desktop app
+        ├── tauri.conf.json
+        ├── Cargo.toml
+        ├── icons/
+        │   └── icon.ico         # Required for Windows build; generated by script
+        ├── src/
+        │   ├── main.rs
+        │   └── lib.rs
+        └── build.rs
 ```
 
 ---
 
-## Security and Git
+## Desktop app (Tauri)
 
-- **`.env`** is listed in `.gitignore`. Never commit it or add real RPC URLs to the repo.
-- Use **`.env.example`** only as a template (placeholder values). No real URLs or keys in the example.
-- **Mnemonics**: Do not use production or valuable mnemonics. Prefer test mnemonics on trusted machines only.
-- After cloning, copy `backend/.env.example` to `backend/.env` and fill in your own values locally.
+Build a **native desktop app** for Windows, macOS, and Linux. The app loads the frontend in a native window and still calls the backend at **http://localhost:5000** — run the backend separately.
+
+**Prerequisites:** [Rust](https://rustup.rs/) (`rustc --version`).
+
+### Icons (required for Windows build)
+
+The repo includes **`frontend/src-tauri/icons/icon.ico`**. If it’s missing or you see a build error about `icons/icon.ico`, generate it:
+
+```bash
+cd frontend
+node scripts/generate-icons.js
+```
+
+To use your own icon later:
+
+```bash
+cd frontend
+npm run tauri icon path/to/your-icon.png
+```
+
+### Development
+
+```bash
+cd frontend
+npm install
+npm run tauri:dev
+```
+
+Starts the Tauri window with the Vite dev server. Ensure the backend is running: `cd backend && npm run dev`.
+
+### Build installers
+
+```bash
+cd frontend
+npm run tauri:build
+```
+
+Outputs are in **`frontend/src-tauri/target/release/bundle/`**:
+
+| OS      | Outputs |
+|---------|---------|
+| Windows | `.msi`, `.exe` (NSIS) |
+| macOS   | `.app`, `.dmg` |
+| Linux   | `.deb`, `.AppImage`, etc. |
+
+---
+
+## Security
+
+- **`.env`** is in `.gitignore`. Never commit it or add real RPC URLs to the repo.
+- Use **test mnemonics** only; do not use production or valuable keys, especially on shared machines.
+- Create **`backend/.env`** locally and fill in your own values.
 
 ---
 
