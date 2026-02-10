@@ -31,7 +31,7 @@ export default function AddressGenerator() {
     try {
       const startIdx = (pageNumber - 1) * itemsPerPage;
       const cleanedValue = inputValue.trim();
-      const res = await fetch("http://localhost:5000/api/wallet/fetch", {
+      const res = await fetch("http://localhost:5001/api/wallet/fetch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

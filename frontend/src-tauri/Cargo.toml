@@ -4,7 +4,7 @@ version = "1.0.0"
 description = "Derive multi-chain wallet addresses from mnemonic or xpub"
 authors = ["you"]
 edition = "2021"
-rust-version = "1.70"
+rust-version = "1.77.2"
 
 [lib]
 name = "wallet_tracker_lib"
@@ -15,6 +15,7 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2.3.5"
 
 [features]
 default = ["custom-protocol"]
