@@ -364,9 +364,12 @@ Outputs are in **`frontend/src-tauri/target/release/bundle/`**:
 
 ## Security
 
-- **`.env`** is in `.gitignore`. Never commit it or add real RPC URLs to the repo.
-- Use **test mnemonics** only; do not use production or valuable keys, especially on shared machines.
-- Create **`backend/.env`** locally and fill in your own values.
+- **`.env` files are secrets**: `.env` is in `.gitignore`. Never commit it or add real RPC URLs, API keys, or other secrets to the repo.
+- **Mnemonics and xpubs are sensitive**: Use **test mnemonics** whenever possible. If you use real data, only do so on a machine you trust and understand that anyone with access to that machine can potentially read it (via malware, screen sharing, etc.).
+- **No secrets in the executable**: The packaged backend and Tauri `.exe` / app bundles can be **reverse‑engineered**. Do **not** hard‑code mnemonics, private keys, seeds, or long‑lived secrets into the codebase or build scripts—assume any secret in the binary can be extracted.
+- **Executable tampering**: Any `.exe` or installer you distribute can be tampered with if an attacker controls the download channel. Share installers only through channels you control (for example, GitHub Releases) and consider publishing checksums or signatures so users can verify downloads.
+- **Intended use**: This project is designed for **address derivation and balance viewing**, not for long‑term storage of high‑value production keys. Treat it as a **tool**, not a custody solution.
+- **Local `.env` only**: Create `backend/.env` locally and fill in your own values. Never paste or show this file in issues, screenshots, or pull requests.
 
 ---
 
