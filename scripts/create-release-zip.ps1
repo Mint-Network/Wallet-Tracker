@@ -52,16 +52,10 @@ Copy-Item $mainExe -Destination (Join-Path $tempDir "wallet-tracker.exe") -Force
 # Zip must contain wallet-backend.exe for the app's fallback to find it
 Copy-Item $backendToZip -Destination (Join-Path $tempDir "wallet-backend.exe") -Force
 
-# Include .env.example file so users can copy it to .env
-$envExamplePath = Join-Path $repoRoot "backend\.env.example"
-if (Test-Path $envExamplePath) {
-    Copy-Item $envExamplePath -Destination (Join-Path $tempDir ".env.example") -Force
-}
-
-# Include README with installation instructions
-$readmePath = Join-Path $PSScriptRoot "RELEASE-README.txt"
-if (Test-Path $readmePath) {
-    Copy-Item $readmePath -Destination (Join-Path $tempDir "README.txt") -Force
+# Include the actual .env file with RPC URLs
+$envPath = Join-Path $repoRoot "backend\.env"
+if (Test-Path $envPath) {
+    Copy-Item $envPath -Destination (Join-Path $tempDir ".env") -Force
 }
 
 Compress-Archive -Path (Join-Path $tempDir "*") -DestinationPath $zipPath -Force

@@ -31,7 +31,7 @@ Derive **multi-chain wallet addresses** from a mnemonic or extended public key (
   - a 12/24-word **mnemonic**, or  
   - an **extended public key (xpub)** (where the chain supports it).
 - **Pagination**: request a range of addresses with `startIdx` and `count`.
-- **ETH/Codex balances**: optionally show `ethBalance` and `codexBalance` per address (requires RPC URLs in backend `.env`).
+- **ETH/Codex balances**: shows `ethBalance` and `codexBalance` per address (pre-configured in release builds).
 
 ---
 
@@ -63,11 +63,23 @@ rustc --version
 
 ## Downloads
 
-Once you build installers and upload them (for example as GitHub Release assets), update the links below so non‑developers can install the app without Node or npm.
+Download the pre-built release for your platform. **No installation or configuration required** - just extract and run!
 
 - **Windows (x64)**: [Download](<ADD_WINDOWS_INSTALLER_URL_HERE>)
-- **macOS (Apple Silicon)**: [Download](<ADD_MAC_ARM_INSTALLER_URL_HERE>)
-- **macOS (Intel)**: [Download](<ADD_MAC_INTEL_INSTALLER_URL_HERE>)
+
+### Quick Start (End Users)
+
+1. Download the zip file for your platform
+2. Extract all files to a folder
+3. Run `wallet-tracker.exe` (Windows)
+
+**That's it!** The app includes everything needed:
+- ✅ Pre-configured backend with RPC URLs
+- ✅ ETH and Codex balance support enabled
+- ✅ No Node.js or npm required
+- ✅ No configuration files to edit
+
+The app will automatically start the backend and display wallet addresses with balances.
 
 ---
 
@@ -106,13 +118,7 @@ cd backend
 npm install
 ```
 
-Create **`backend/.env`** with your config (see [Environment variables](#environment-variables)). If the repo includes `backend/.env.example`, you can copy it:
-
-```bash
-cp .env.example .env
-```
-
-Then edit `.env` with your values. Start the server:
+Create **`backend/.env`** with your config (see [Environment variables](#environment-variables)). Start the server:
 
 ```bash
 npm run dev
@@ -141,6 +147,8 @@ npm run dev
 ---
 
 ## Environment variables
+
+**Note**: This section is for **developers building from source**. End users downloading the release don't need to configure anything - the `.env` file is already included with RPC URLs pre-configured.
 
 Backend loads **`backend/.env`**. Never commit `.env` or put real URLs in the repo.
 
@@ -171,7 +179,9 @@ RPC options: Infura, Alchemy, QuickNode, or public endpoints for Ethereum; your 
 3. **Value**: Paste mnemonic or xpub (use test keys only; never production keys on untrusted machines).
 4. **Show Addresses**: Fetches the first page; **Prev** / **Next** for more.
 
-For ETH, the table shows **ETH Balance** and **Codex Balance** when the backend has the corresponding RPC URLs configured.
+**For release users**: ETH and Codex balances are **automatically enabled** - no configuration needed! The app includes pre-configured RPC URLs.
+
+**For developers**: If building from source, see [Environment variables](#environment-variables) to configure RPC URLs.
 
 ---
 
