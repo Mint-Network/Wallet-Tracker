@@ -30,3 +30,6 @@ frontend/src-tauri/bin/*
 # Tauri build outputs
 frontend/src-tauri/target/
 frontend/src-tauri/gen/
+
+# Release zip files
+Wallet-Tracker-v*.zip
