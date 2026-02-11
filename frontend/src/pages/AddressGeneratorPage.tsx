@@ -1,8 +1,8 @@
 import { useState } from "react";
 import "./AddressGeneratorPage.css";
 
-/** Number of addresses to fetch per page (and per API call). */
-const itemsPerPage = 20;
+/** Number of addresses to fetch per page (fits in view without scroll). */
+const itemsPerPage = 10;
 /** Total items available across all pages (drives pagination cap). */
 const totalItemsToDisplay = 100;
 /** Currencies that do not return ethBalance/codexBalance (hide those columns). */
@@ -119,7 +119,6 @@ export default function AddressGenerator() {
                     e.target.value as "ETH" | "BTC" | "LTC" | "BCH" | "SOL",
                   );
                   setResults([]);
-                  setInputValue("");
                   setError(null);
                 }}
               >
@@ -132,14 +131,14 @@ export default function AddressGenerator() {
             </div>
           </div>
 
-          <div className="field-group">
+          <div className="field-group field-group-with-action">
             <label className="field-label" htmlFor="input-value">
               {selectedType === "xpub" ? "Extended Public Key" : "Mnemonic"}
             </label>
             <textarea
               id="input-value"
               className="textarea"
-              rows={3}
+              rows={2}
               placeholder={
                 selectedType === "xpub"
                   ? "Enter xpub here"
@@ -149,83 +148,81 @@ export default function AddressGenerator() {
               onChange={(e) => setInputValue(e.target.value)}
               disabled={loading}
             />
-          </div>
+            <div className="actions-row">
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => deriveAddresses(1)}
+                disabled={loading || !inputValue.trim()}
+              >
+                {loading ? "Loading..." : "Show Addresses"}
+              </button>
+              {error && <p className="error-text">{error}</p>}
+            </div>
 
-          <div className="actions-row">
-            <button
-              type="button"
-              className="primary-button"
-              onClick={() => deriveAddresses(1)}
-              disabled={loading || !inputValue.trim()}
-            >
-              {loading ? "Loading..." : "Show Addresses"}
-            </button>
-            {error && <p className="error-text">{error}</p>}
+            {results.length > 0 && (
+              <div className="results-inline">
+                <div className="results-table-wrapper">
+                  <table className="results-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Address</th>
+                        <th>Derivation Path</th>
+                        {!noBalanceCurrencyDisplay.includes(currencyType) && (
+                          <>
+                            <th>ETH Balance</th>
+                            <th>Codex Balance</th>
+                          </>
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {results.map((r) => (
+                        <tr key={r.srNo ?? r.address}>
+                          <td>{r.srNo}</td>
+                          <td className="mono-text">{r.address}</td>
+                          <td className="mono-text">{r.path}</td>
+                          {!noBalanceCurrencyDisplay.includes(currencyType) && (
+                            <>
+                              <td className="mono-text">{r.ethBalance}</td>
+                              <td className="mono-text">{r.codexBalance}</td>
+                            </>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="pagination">
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    disabled={currentPage === 1 || loading}
+                    onClick={() => deriveAddresses(Math.max(1, currentPage - 1))}
+                  >
+                    Prev
+                  </button>
+                  <span className="pagination-info">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    disabled={
+                      currentPage * itemsPerPage >= totalItemsToDisplay || loading
+                    }
+                    onClick={() =>
+                      deriveAddresses(Math.min(currentPage + 1, totalPages))
+                    }
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </section>
-
-        {results.length > 0 && (
-          <section className="results-section">
-            <div className="results-table-wrapper">
-              <table className="results-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Address</th>
-                    <th>Derivation Path</th>
-                    {!noBalanceCurrencyDisplay.includes(currencyType) && (
-                      <>
-                        <th>ETH Balance</th>
-                        <th>Codex Balance</th>
-                      </>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {results.map((r) => (
-                    <tr key={r.srNo ?? r.address}>
-                      <td>{r.srNo}</td>
-                      <td className="mono-text">{r.address}</td>
-                      <td className="mono-text">{r.path}</td>
-                      {!noBalanceCurrencyDisplay.includes(currencyType) && (
-                        <>
-                          <td className="mono-text">{r.ethBalance}</td>
-                          <td className="mono-text">{r.codexBalance}</td>
-                        </>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="pagination">
-              <button
-                type="button"
-                className="secondary-button"
-                disabled={currentPage === 1 || loading}
-                onClick={() => deriveAddresses(Math.max(1, currentPage - 1))}
-              >
-                Prev
-              </button>
-              <span className="pagination-info">
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                type="button"
-                className="secondary-button"
-                disabled={
-                  currentPage * itemsPerPage >= totalItemsToDisplay || loading
-                }
-                onClick={() =>
-                  deriveAddresses(Math.min(currentPage + 1, totalPages))
-                }
-              >
-                Next
-              </button>
-            </div>
-          </section>
-        )}
       </div>
     </div>
   );

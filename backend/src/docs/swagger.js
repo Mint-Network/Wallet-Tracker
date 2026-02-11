@@ -1,7 +1,7 @@
 /**
  * OpenAPI 3.0 spec for Wallet Tracker API. Served as JSON at /api-docs.json and rendered by Swagger UI at /api-docs.
  */
-import swaggerJSDoc from "swagger-jsdoc";
+const swaggerJSDoc = require("swagger-jsdoc");
 
 const options = {
   definition: {
@@ -155,5 +155,7 @@ const options = {
   apis: [],
 };
 
-export const swaggerSpec = swaggerJSDoc(options);
+const swaggerSpec = swaggerJSDoc(options);
+
+module.exports = { swaggerSpec };
 

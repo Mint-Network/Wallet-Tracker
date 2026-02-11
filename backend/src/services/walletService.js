@@ -1,4 +1,4 @@
-import { WalletStrategyRegistry } from "../domain/Factory/WalletStrategyRegistry.js";
+const { WalletStrategyRegistry } = require("../domain/Factory/WalletStrategyRegistry.js");
 
 /**
  * Orchestrates wallet derivation: resolves strategy by currency, derives root and children, then enriches (e.g. balances).
@@ -9,7 +9,7 @@ import { WalletStrategyRegistry } from "../domain/Factory/WalletStrategyRegistry
  * @param {number} [params.count] - Number of addresses to derive
  * @param {number} [params.startIdx] - Starting index (pagination)
  */
-export const fetchWalletData = async ({
+const fetchWalletData = async ({
   inputType,
   currency,
   value,
@@ -31,3 +31,5 @@ export const fetchWalletData = async ({
     data: enriched,
   };
 };
+
+module.exports = { fetchWalletData };

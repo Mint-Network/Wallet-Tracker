@@ -24,6 +24,7 @@ pub fn run() {
                 #[cfg(not(windows))]
                 let backend_name = "wallet-backend";
                 let backend_path: PathBuf = resource_dir.join(backend_name);
+                
                 if backend_path.is_file() {
                     let _ = Command::new(&backend_path)
                         .env("PORT", port.to_string())
@@ -33,11 +34,25 @@ pub fn run() {
                 }
             }
 
-            eprintln!("Wallet Tracker: backend not found. Place wallet-backend.exe next to wallet-tracker.exe.");
-            Err(tauri::Error::Setup(Box::new(std::io::Error::new(
-                std::io::ErrorKind::NotFound,
-                "Backend not found. Place wallet-backend.exe in the same folder as wallet-tracker.exe.",
-            ))))
+            // 3) Try exe directory
+            if let Ok(exe_dir) = std::env::current_exe() {
+                if let Some(parent) = exe_dir.parent() {
+                    #[cfg(windows)]
+                    let backend_name = "wallet-backend.exe";
+                    #[cfg(not(windows))]
+                    let backend_name = "wallet-backend";
+                    let alt_path = parent.join(backend_name);
+                    if alt_path.is_file() {
+                        let _ = Command::new(&alt_path)
+                            .env("PORT", port.to_string())
+                            .current_dir(parent)
+                            .spawn();
+                        return Ok(());
+                    }
+                }
+            }
+
+            Ok(())
         })
         .run(tauri::generate_context!())
         .expect("error while running Wallet Tracker application");

@@ -2,24 +2,23 @@
  * Express app and composition root. Loads strategies, wires DI for ETH (balance enricher + RPC providers),
  * mounts wallet API and Swagger UI.
  */
-import express from "express";
-import cors from "cors";
-import walletRoutes from "./routes/walletRoute.js";
-import swaggerUi from "swagger-ui-express";
-import { swaggerSpec } from "./docs/swagger.js";
-import dotenv from "dotenv";
+const express = require("express");
+const cors = require("cors");
+const walletRoutes = require("./routes/walletRoute.js");
+const swaggerUi = require("swagger-ui-express");
+const { swaggerSpec } = require("./docs/swagger.js");
+require("dotenv").config();
 // Load all strategies so they self-register (BTC, LTC, BCH, SOL). ETH is re-registered below with DI.
-import "./domain/Strategy/index.js";
+require("./domain/Strategy/index.js");
 
-import { WalletStrategyRegistry } from "./domain/Factory/WalletStrategyRegistry.js";
-import { EthWalletStrategy } from "./domain/Strategy/EthWalletStrategy.js";
-import { EthRpcProvider } from "./domain/Providers/EthRpcProvider.js";
-import { CodexRpcProvider } from "./domain/Providers/CodexRpcProvider.js";
-import { ZeroBalanceProvider } from "./domain/Providers/ZeroBalanceProvider.js";
-import { EthBalanceEnricher } from "./domain/Enrichers/EthBalanceEnricher.js";
+const { WalletStrategyRegistry } = require("./domain/Factory/WalletStrategyRegistry.js");
+const { EthWalletStrategy } = require("./domain/Strategy/EthWalletStrategy.js");
+const { EthRpcProvider } = require("./domain/Providers/EthRpcProvider.js");
+const { CodexRpcProvider } = require("./domain/Providers/CodexRpcProvider.js");
+const { ZeroBalanceProvider } = require("./domain/Providers/ZeroBalanceProvider.js");
+const { EthBalanceEnricher } = require("./domain/Enrichers/EthBalanceEnricher.js");
 
 const app = express();
-dotenv.config();
 // ---------- Composition root (DI): wire ETH strategy with balance enricher and RPC providers ----------
 const ethRpcUrl = process.env.ETH_RPC_URL;
 const codexRpcUrl = process.env.CODEX_RPC_URL;
@@ -53,4 +52,4 @@ app.get("/", (req, res) => {
   res.send("Welcome to the Wallet Tracker API");
 });
 
-export default app;
+module.exports = app;

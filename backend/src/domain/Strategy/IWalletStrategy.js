@@ -4,7 +4,7 @@
  * and optionally inject an enricher for balance data (DI).
  */
 
-export class IWalletStrategy {
+class IWalletStrategy {
   /**
    * Returns a map of inputType -> { deriveRoot(input), deriveChildren(root, count, startIndex) }.
    * Override in subclass to support MNEMONIC, XPUB, or future types without modifying existing code.
@@ -53,3 +53,5 @@ export class IWalletStrategy {
     return children;
   }
 }
+
+module.exports = { IWalletStrategy };

@@ -5,7 +5,7 @@
  */
 const registry = {};
 
-export const WalletStrategyRegistry = {
+const WalletStrategyRegistry = {
   /**
    * Register a strategy for a currency. Pass either a class (new will be used) or a factory function (called to get instance).
    * @param {string} currency - Currency code (e.g. "ETH", "BTC")
@@ -27,3 +27,5 @@ export const WalletStrategyRegistry = {
     return Strategy.prototype != null ? new Strategy() : Strategy();
   },
 };
+
+module.exports = { WalletStrategyRegistry };

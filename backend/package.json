@@ -1,16 +1,15 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "main": "server.js",
-  "type": "module",
-  "bin": "server.js",
+  "main": "index.js",
+  "bin": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js",
-    "dev": "nodemon server.js",
-    "build:backend:win": "pkg . --targets node18-win-x64 --output ../frontend/src-tauri/bin/wallet-backend-x86_64-pc-windows-msvc.exe",
-    "build:backend:mac:arm": "pkg . --targets node18-macos-arm64 --output ../frontend/src-tauri/bin/wallet-backend-aarch64-apple-darwin",
-    "build:backend:mac:intel": "pkg . --targets node18-macos-x64 --output ../frontend/src-tauri/bin/wallet-backend-x86_64-apple-darwin"
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "build:backend:win": "node build-bundle.js && node build-nexe.js win",
+    "build:backend:mac:arm": "node build-bundle.js && node build-nexe.js mac-arm",
+    "build:backend:mac:intel": "node build-bundle.js && node build-nexe.js mac-intel"
   },
   "keywords": [],
   "author": "",
@@ -35,7 +34,9 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.11",
-    "pkg": "^5.8.1"
+    "pkg": "^5.8.1",
+    "esbuild": "^0.24.0",
+    "nexe": "^4.0.0-beta.19"
   },
   "pkg": {
     "assets": [],

@@ -1,10 +1,10 @@
-import { HDKey } from "@scure/bip32";
-import * as bitcoin from "bitcoinjs-lib";
-import cashaddr from "cashaddrjs";
-import * as bip39 from "@scure/bip39";
-import { InputType } from "../Types/InputType.js";
-import { WalletStrategyRegistry } from "../Factory/WalletStrategyRegistry.js";
-import { IWalletStrategy } from "./IWalletStrategy.js";
+const { HDKey } = require("@scure/bip32");
+const bitcoin = require("bitcoinjs-lib");
+const cashaddr = require("cashaddrjs");
+const bip39 = require("@scure/bip39");
+const { InputType } = require("../Types/InputType.js");
+const { WalletStrategyRegistry } = require("../Factory/WalletStrategyRegistry.js");
+const { IWalletStrategy } = require("./IWalletStrategy.js");
 
 const BASE_PATH_MNEMONIC = "m/44'/145'/0'/0";
 
@@ -12,7 +12,7 @@ const BASE_PATH_MNEMONIC = "m/44'/145'/0'/0";
  * Bitcoin Cash (P2PKH, CashAddr) wallet derivation strategy.
  * Supports MNEMONIC and XPUB via input handlers (OCP). No balance enrichment.
  */
-export class BchWalletStrategy extends IWalletStrategy {
+class BchWalletStrategy extends IWalletStrategy {
   getInputHandlers() {
     return {
       [InputType.XPUB]: {
@@ -58,3 +58,5 @@ export class BchWalletStrategy extends IWalletStrategy {
 }
 
 WalletStrategyRegistry.register("BCH", BchWalletStrategy);
+
+module.exports = { BchWalletStrategy };

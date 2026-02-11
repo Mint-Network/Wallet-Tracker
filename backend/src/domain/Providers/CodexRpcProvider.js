@@ -1,10 +1,10 @@
-import { ethers } from "ethers";
+const { ethers } = require("ethers");
 
 /**
  * Codex chain RPC provider for balance lookups.
  * Accepts rpcUrl in constructor for DI; falls back to CODEX_RPC_URL if not provided.
  */
-export class CodexRpcProvider {
+class CodexRpcProvider {
   /**
    * @param {string} [rpcUrl] - Optional. Uses process.env.CODEX_RPC_URL if omitted.
    */
@@ -20,3 +20,5 @@ export class CodexRpcProvider {
     return this.provider.getBalance(address);
   }
 }
+
+module.exports = { CodexRpcProvider };

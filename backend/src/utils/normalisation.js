@@ -1,5 +1,5 @@
-import bs58check from "bs58check";
-import { Buffer } from "buffer";
+const bs58check = require("bs58check");
+const { Buffer } = require("buffer");
 
 /**
  * Normalize Bitcoin-family extended public keys (xpub/ypub/zpub/tpub/vpub) to a standard version
@@ -7,7 +7,7 @@ import { Buffer } from "buffer";
  * @param {string} extPub - Base58check-encoded extended public key
  * @returns {string} Normalized base58check extended public key (xpub or tpub for testnet)
  */
-export function normalizeExtendedPubKey(extPub) {
+function normalizeExtendedPubKey(extPub) {
   const data = bs58check.decode(extPub);
   const version = Buffer.from(data.slice(0, 4)).toString("hex");
 
@@ -27,3 +27,5 @@ export function normalizeExtendedPubKey(extPub) {
   const converted = targetVersion + Buffer.from(data.slice(4)).toString("hex");
   return bs58check.encode(Buffer.from(converted, "hex"));
 }
+
+module.exports = { normalizeExtendedPubKey };

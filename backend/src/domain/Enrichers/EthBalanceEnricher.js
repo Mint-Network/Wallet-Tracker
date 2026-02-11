@@ -1,11 +1,11 @@
-import { ethers } from "ethers";
-import { IBalanceEnricher } from "./IBalanceEnricher.js";
+const { ethers } = require("ethers");
+const { IBalanceEnricher } = require("./IBalanceEnricher.js");
 
 /**
  * Enricher that adds ETH and Codex balances to derived address entries.
  * Depends on two balance providers (injected for testability and DIP).
  */
-export class EthBalanceEnricher extends IBalanceEnricher {
+class EthBalanceEnricher extends IBalanceEnricher {
   /**
    * @param {object} ethProvider - Provider with getBalance(address) returning balance in wei
    * @param {object} codexProvider - Provider with getBalance(address) returning balance in wei
@@ -33,3 +33,5 @@ export class EthBalanceEnricher extends IBalanceEnricher {
     );
   }
 }
+
+module.exports = { EthBalanceEnricher };

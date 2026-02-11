@@ -1,10 +1,10 @@
-import { fetchWalletData } from "../services/walletService.js";
-import { InputType } from "../domain/Types/InputType.js";
+const { fetchWalletData } = require("../services/walletService.js");
+const { InputType } = require("../domain/Types/InputType.js");
 
 /**
  * POST /api/wallet/fetch handler. Validates body, normalizes inputType, and returns derived addresses (and balances for ETH).
  */
-export const fetchData = async (req, res) => {
+const fetchData = async (req, res) => {
   try {
     const { inputType, currency, value, count, startIdx } = req.body;
 
@@ -34,3 +34,5 @@ export const fetchData = async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 };
+
+module.exports = { fetchData };
