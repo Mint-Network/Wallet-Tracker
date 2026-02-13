@@ -2,13 +2,38 @@ const bs58check = require("bs58check");
 const { Buffer } = require("buffer");
 
 /**
+ * bs58check can be exported in different ways depending on CJS/ESM interop.
+ * Normalise access so we always have { encode, decode } available.
+ */
+function getBs58check() {
+  // 1) CommonJS style: module itself has encode/decode
+  if (bs58check && typeof bs58check.decode === "function" && typeof bs58check.encode === "function") {
+    return bs58check;
+  }
+
+  // 2) ESM default: { default: { encode, decode } }
+  if (
+    bs58check &&
+    bs58check.default &&
+    typeof bs58check.default.decode === "function" &&
+    typeof bs58check.default.encode === "function"
+  ) {
+    return bs58check.default;
+  }
+
+  throw new Error("bs58check encode/decode API is not available – unsupported version/interop");
+}
+
+const bs = getBs58check();
+
+/**
  * Normalize Bitcoin-family extended public keys (xpub/ypub/zpub/tpub/vpub) to a standard version
  * so that HDKey.fromExtendedKey can consume them regardless of wallet prefix.
  * @param {string} extPub - Base58check-encoded extended public key
  * @returns {string} Normalized base58check extended public key (xpub or tpub for testnet)
  */
 function normalizeExtendedPubKey(extPub) {
-  const data = bs58check.decode(extPub);
+  const data = bs.decode(extPub);
   const version = Buffer.from(data.slice(0, 4)).toString("hex");
 
   const VERSIONS = {
@@ -25,7 +50,7 @@ function normalizeExtendedPubKey(extPub) {
   }
 
   const converted = targetVersion + Buffer.from(data.slice(4)).toString("hex");
-  return bs58check.encode(Buffer.from(converted, "hex"));
+  return bs.encode(Buffer.from(converted, "hex"));
 }
 
 module.exports = { normalizeExtendedPubKey };

@@ -31,6 +31,10 @@ const fetchData = async (req, res) => {
 
     res.json(result);
   } catch (err) {
+    // Log full error server-side for easier debugging while returning a clean message to clients.
+    // This is safe for production as it only logs to backend console.
+    // eslint-disable-next-line no-console
+    console.error("Error in /api/wallet/fetch:", err);
     res.status(400).json({ error: err.message });
   }
 };

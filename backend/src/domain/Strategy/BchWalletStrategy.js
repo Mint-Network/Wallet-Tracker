@@ -2,6 +2,7 @@ const { HDKey } = require("@scure/bip32");
 const bitcoin = require("bitcoinjs-lib");
 const cashaddr = require("cashaddrjs");
 const bip39 = require("@scure/bip39");
+const { normalizeExtendedPubKey } = require("../../utils/normalisation.js");
 const { InputType } = require("../Types/InputType.js");
 const { WalletStrategyRegistry } = require("../Factory/WalletStrategyRegistry.js");
 const { IWalletStrategy } = require("./IWalletStrategy.js");
@@ -13,23 +14,42 @@ const BASE_PATH_MNEMONIC = "m/44'/145'/0'/0";
  * Supports MNEMONIC and XPUB via input handlers (OCP). No balance enrichment.
  */
 class BchWalletStrategy extends IWalletStrategy {
+  /**
+   * bitcoinjs-lib can be loaded in different ways (CJS vs ESM, bundler interop).
+   * Normalise access to the `payments` namespace so we can always call `p2pkh`.
+   */
+  static getPayments() {
+    // CommonJS: require("bitcoinjs-lib") -> { payments, ... }
+    if (bitcoin && bitcoin.payments) {
+      return bitcoin.payments;
+    }
+    // ESM default: require("bitcoinjs-lib") -> { default: { payments, ... } }
+    if (bitcoin && bitcoin.default && bitcoin.default.payments) {
+      return bitcoin.default.payments;
+    }
+    throw new Error("bitcoinjs-lib payments API is not available");
+  }
+
   getInputHandlers() {
     return {
       [InputType.XPUB]: {
         deriveRoot: (input) => {
-          const node = HDKey.fromExtendedKey(input);
-          return { node, basePath: "" };
+          const normalizedXpub = normalizeExtendedPubKey(input);
+          const node = HDKey.fromExtendedKey(normalizedXpub);
+          return { node };
         },
         deriveChildren: (root, count, startIndex) => {
+          const payments = BchWalletStrategy.getPayments();
           return Array.from({ length: count }).map((_, i) => {
-            const child = root.node.derive(startIndex + i);
-            const { hash } = bitcoin.payments.p2pkh({
+            const path = `m/0/${startIndex + i}`;
+            const child = root.node.derive(path);
+            const { hash } = payments.p2pkh({
               pubkey: Buffer.from(child.publicKey),
             });
             const address = cashaddr.encode("bitcoincash", "P2PKH", hash);
             return {
               srNo: startIndex + i + 1,
-              path: `m/${startIndex + i}`,
+              path: `m/44'/145'/0'/0/${startIndex + i}`,
               address,
             };
           });
@@ -42,10 +62,11 @@ class BchWalletStrategy extends IWalletStrategy {
           return { node, basePath: BASE_PATH_MNEMONIC };
         },
         deriveChildren: (root, count, startIndex) => {
+          const payments = BchWalletStrategy.getPayments();
           return Array.from({ length: count }).map((_, i) => {
             const path = `${root.basePath}/${startIndex + i}`;
             const child = root.node.derive(path);
-            const { hash } = bitcoin.payments.p2pkh({
+            const { hash } = payments.p2pkh({
               pubkey: Buffer.from(child.publicKey),
             });
             const address = cashaddr.encode("bitcoincash", "P2PKH", hash);

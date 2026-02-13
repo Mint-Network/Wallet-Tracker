@@ -13,6 +13,22 @@ const BASE_PATH_MNEMONIC = "m/84'/0'/0'/0";
  * Supports MNEMONIC and XPUB via input handlers (OCP). No balance enrichment.
  */
 class BtcWalletStrategy extends IWalletStrategy {
+  /**
+   * bitcoinjs-lib can be loaded in different ways (CJS vs ESM, bundler interop).
+   * Normalise access to the `payments` namespace so we can always call `p2wpkh`.
+   */
+  static getPayments() {
+    // CommonJS: require("bitcoinjs-lib") -> { payments, ... }
+    if (bitcoin && bitcoin.payments) {
+      return bitcoin.payments;
+    }
+    // ESM default: require("bitcoinjs-lib") -> { default: { payments, ... } }
+    if (bitcoin && bitcoin.default && bitcoin.default.payments) {
+      return bitcoin.default.payments;
+    }
+    throw new Error("bitcoinjs-lib payments API is not available");
+  }
+
   getInputHandlers() {
     return {
       [InputType.XPUB]: {
@@ -22,10 +38,11 @@ class BtcWalletStrategy extends IWalletStrategy {
           return { node };
         },
         deriveChildren: (root, count, startIndex) => {
+          const payments = BtcWalletStrategy.getPayments();
           return Array.from({ length: count }).map((_, i) => {
             const path = `m/0/${startIndex + i}`;
             const child = root.node.derive(path);
-            const { address } = bitcoin.payments.p2wpkh({
+            const { address } = payments.p2wpkh({
               pubkey: Buffer.from(child.publicKey),
             });
             return {
@@ -46,11 +63,12 @@ class BtcWalletStrategy extends IWalletStrategy {
           if (!root.basePath) {
             throw new Error("Missing basePath for mnemonic-derived BTC root");
           }
+          const payments = BtcWalletStrategy.getPayments();
           return Array.from({ length: count }).map((_, i) => {
             const index = startIndex + i;
             const path = `${root.basePath}/${index}`;
             const child = root.node.derive(path);
-            const { address } = bitcoin.payments.p2wpkh({
+            const { address } = payments.p2wpkh({
               pubkey: Buffer.from(child.publicKey),
             });
             return { srNo: index + 1, path, address };

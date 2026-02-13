@@ -22,6 +22,22 @@ const litecoinNetwork = {
  * Supports MNEMONIC and XPUB via input handlers (OCP). No balance enrichment.
  */
 class LtcWalletStrategy extends IWalletStrategy {
+  /**
+   * bitcoinjs-lib can be loaded in different ways (CJS vs ESM, bundler interop).
+   * Normalise access to the `payments` namespace so we can always call `p2wpkh`.
+   */
+  static getPayments() {
+    // CommonJS: require("bitcoinjs-lib") -> { payments, ... }
+    if (bitcoin && bitcoin.payments) {
+      return bitcoin.payments;
+    }
+    // ESM default: require("bitcoinjs-lib") -> { default: { payments, ... } }
+    if (bitcoin && bitcoin.default && bitcoin.default.payments) {
+      return bitcoin.default.payments;
+    }
+    throw new Error("bitcoinjs-lib payments API is not available");
+  }
+
   getInputHandlers() {
     return {
       [InputType.MNEMONIC]: {
@@ -31,10 +47,11 @@ class LtcWalletStrategy extends IWalletStrategy {
           return { node, basePath: BASE_PATH_MNEMONIC };
         },
         deriveChildren: (root, count, startIndex) => {
+          const payments = LtcWalletStrategy.getPayments();
           return Array.from({ length: count }).map((_, i) => {
             const path = `${root.basePath}/${startIndex + i}`;
             const child = root.node.derive(path);
-            const { address } = bitcoin.payments.p2wpkh({
+            const { address } = payments.p2wpkh({
               pubkey: Buffer.from(child.publicKey),
               network: litecoinNetwork,
             });
@@ -50,15 +67,20 @@ class LtcWalletStrategy extends IWalletStrategy {
         },
         deriveChildren: (root, count, startIndex) => {
           if (!root?.node) throw new Error("Invalid root for LTC");
+          const payments = LtcWalletStrategy.getPayments();
           return Array.from({ length: count }).map((_, i) => {
             const index = startIndex + i;
             const path = `m/0/${index}`;
             const child = root.node.derive(path);
-            const { address } = bitcoin.payments.p2wpkh({
+            const { address } = payments.p2wpkh({
               pubkey: Buffer.from(child.publicKey),
               network: litecoinNetwork,
             });
-            return { srNo: index + 1, path, address };
+            return {
+              srNo: index + 1,
+              path: `m/84'/2'/0'/0/${index}`,
+              address,
+            };
           });
         },
       },
