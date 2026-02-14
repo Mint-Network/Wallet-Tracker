@@ -21,6 +21,21 @@ import { EthBalanceEnricher } from "./domain/Enrichers/EthBalanceEnricher.js";
 import logger from "./utils/logger.js";
 
 const app = express();
+app.use((req, res, next) => {
+  res.setHeader("x-backend-pid", String(process.pid));
+  if (!process.env.BOOT_ID) {
+    process.env.BOOT_ID = `${Date.now()}-${process.pid}`;
+  }
+  res.setHeader("x-backend-boot-id", process.env.BOOT_ID);
+  process.stdout.write(
+    `[REQ] ${new Date().toISOString()} ${req.method} ${req.originalUrl} pid=${process.pid} boot=${process.env.BOOT_ID}\n`
+  );
+  logger.info(
+    { method: req.method, path: req.originalUrl, pid: process.pid, bootId: process.env.BOOT_ID },
+    "Incoming request"
+  );
+  next();
+});
 // ---------- Composition root (DI): wire ETH strategy with balance enricher and RPC providers ----------
 const ethRpcUrl = process.env.ETH_RPC_URL;
 const codexRpcUrl = process.env.CODEX_RPC_URL;
@@ -58,6 +73,18 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 }));
 
 app.use("/api/wallet", walletRoutes);
+app.get("/api/debug/ping", (req, res) => {
+  process.stdout.write(
+    `[PING] ${new Date().toISOString()} pid=${process.pid} boot=${process.env.BOOT_ID}\n`
+  );
+  logger.info({ pid: process.pid, bootId: process.env.BOOT_ID }, "Debug ping");
+  res.json({
+    ok: true,
+    pid: process.pid,
+    bootId: process.env.BOOT_ID,
+    cwd: process.cwd(),
+  });
+});
 app.get("/", (req, res) => {
   res.send("Welcome to the Wallet Tracker API");
 });

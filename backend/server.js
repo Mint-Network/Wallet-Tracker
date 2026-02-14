@@ -7,7 +7,7 @@ dotenv.config();
 import app from "./src/app.js";
 import logger from "./src/utils/logger.js";
 
-const port = process.env.PORT || 5001;
+const port = process.env.PORT || 55001;
 
 // Prevent the process from exiting on unhandled errors
 process.on('uncaughtException', (err) => {

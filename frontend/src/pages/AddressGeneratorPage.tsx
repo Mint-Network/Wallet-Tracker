@@ -9,6 +9,19 @@ const totalItemsToDisplay = 100;
 const noBalanceCurrencyDisplay = ["BTC", "LTC", "BCH", "SOL"];
 const totalPages = Math.ceil(totalItemsToDisplay / itemsPerPage);
 
+type AddressResult = {
+  srNo: number;
+  address: string;
+  path: string;
+  ethBalance?: string;
+  codexBalance?: string;
+};
+
+type WalletFetchResponse = {
+  data?: AddressResult[];
+  error?: string;
+};
+
 /**
  * Address generator UI: mnemonic or xpub + currency, then fetches derived addresses from the API
  * and displays them in a table with pagination.
@@ -17,7 +30,7 @@ export default function AddressGenerator() {
   const [selectedType, setSelectedType] = useState<"mnemonic" | "xpub">("mnemonic");
   const [currencyType, setCurrencyType] = useState<"ETH" | "BTC" | "LTC" | "BCH" | "SOL">("ETH");
   const [inputValue, setInputValue] = useState("");
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<AddressResult[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +44,7 @@ export default function AddressGenerator() {
     try {
       const startIdx = (pageNumber - 1) * itemsPerPage;
       const cleanedValue = inputValue.trim();
-      const res = await fetch("http://localhost:5001/api/wallet/fetch", {
+      const res = await fetch("http://localhost:55001/api/wallet/fetch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -43,11 +56,11 @@ export default function AddressGenerator() {
         }),
       });
 
-      if (!res.ok) throw new Error("Failed to fetch data");
-      const json = await res.json();
+      const json: WalletFetchResponse = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to fetch data");
       setResults(json.data || []);
-    } catch (e: any) {
-      setError(e.message || "Something went wrong");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
       setLoading(false);
     }

@@ -14,7 +14,7 @@ const options = {
     },
     servers: [
       {
-        url: "http://localhost:5001",
+        url: "http://localhost:55001",
         description: "Local development server",
       },
     ],
@@ -156,4 +156,3 @@ const options = {
 };
 
 export const swaggerSpec = swaggerJSDoc(options);
-

@@ -8,7 +8,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
-            let port = 5001u16;
+            let port = 55001u16;
 
             // 1) Try official sidecar (name: wallet-backend-<target-triple>.exe)
             if let Ok(cmd) = app.shell().sidecar("wallet-backend") {

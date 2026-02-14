@@ -32,7 +32,9 @@ if (fs.existsSync(envPath)) {
 
 import app from "./src/app.js";
 
-const port = process.env.PORT || 5001;
+const port = process.env.PORT || 55001;
+const bootId = `${Date.now()}-${process.pid}`;
+process.env.BOOT_ID = bootId;
 
 // Prevent the process from exiting on unhandled errors
 process.on('uncaughtException', (err) => {
@@ -43,8 +45,16 @@ process.on('unhandledRejection', (reason, promise) => {
   logger.error(reason, 'Unhandled Rejection at Promise');
 });
 
-app.listen(port, () => {
-  logger.info(`Server is running on port ${port}`);
+const server = app.listen(port, () => {
+  logger.info(
+    { port, pid: process.pid, cwd: process.cwd(), bootId },
+    "Server is running"
+  );
+});
+
+server.on("error", (err) => {
+  logger.error({ err, port, pid: process.pid }, "Server failed to start");
+  console.error(`[backend] listen error on port ${port}:`, err?.message || err);
 });
 
 // Keep the process alive

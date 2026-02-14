@@ -124,7 +124,7 @@ Create **`backend/.env`** with your config (see [Environment variables](#environ
 npm run dev
 ```
 
-API base: **http://localhost:5001** (or the `PORT` in `.env`).
+API base: **http://localhost:55001** (or the `PORT` in `.env`).
 
 ### 3. Frontend
 
@@ -154,7 +154,7 @@ Backend loads **`backend/.env`**. Never commit `.env` or put real URLs in the re
 
 | Variable        | Required | Description |
 |----------------|----------|-------------|
-| `PORT`         | No       | Server port (default: `5001`) |
+| `PORT`         | No       | Server port (default: `55001`) |
 | `NODE_ENV`     | No       | e.g. `development` or `production` |
 | `ETH_RPC_URL`  | For ETH balances | Ethereum JSON-RPC URL (Infura, Alchemy, etc.). If missing, ETH/Codex balance columns stay empty. |
 | `CODEX_RPC_URL`| No       | Codex chain RPC URL. If missing, `codexBalance` is returned as `0.0`. |
@@ -162,7 +162,7 @@ Backend loads **`backend/.env`**. Never commit `.env` or put real URLs in the re
 **Example (use your own values):**
 
 ```env
-PORT=5001
+PORT=55001
 NODE_ENV=development
 ETH_RPC_URL=https://your-eth-rpc.example.com
 CODEX_RPC_URL=https://your-codex-rpc.example.com
@@ -187,8 +187,8 @@ RPC options: Infura, Alchemy, QuickNode, or public endpoints for Ethereum; your 
 
 ## API overview
 
-- **Swagger UI**: **http://localhost:5001/api-docs**
-- **OpenAPI JSON**: **http://localhost:5001/api-docs.json**
+- **Swagger UI**: **http://localhost:55001/api-docs**
+- **OpenAPI JSON**: **http://localhost:55001/api-docs.json**
 
 ### POST `/api/wallet/fetch`
 
@@ -353,7 +353,7 @@ To ship a single desktop app that \"just works\" for end users (no Node, no manu
    - `wallet-backend-aarch64-apple-darwin`
    - `wallet-backend-x86_64-apple-darwin`
 
-2. **Tauri picks the right binary** at runtime using `externalBin` and starts it as a sidecar on port `5001`. The frontend then calls `http://127.0.0.1:5001` from inside the desktop app.
+2. **Tauri picks the right binary** at runtime using `externalBin` and starts it as a sidecar on port `55001`. The frontend then calls `http://127.0.0.1:55001` from inside the desktop app.
 
 ### Build installers
 
