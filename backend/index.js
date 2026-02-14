@@ -34,6 +34,18 @@ import app from "./src/app.js";
 
 const port = process.env.PORT || 5001;
 
+// Prevent the process from exiting on unhandled errors
+process.on('uncaughtException', (err) => {
+  logger.error(err, 'Uncaught Exception thrown');
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error(reason, 'Unhandled Rejection at Promise');
+});
+
 app.listen(port, () => {
   logger.info(`Server is running on port ${port}`);
 });
+
+// Keep the process alive
+setInterval(() => {}, 1 << 30);
