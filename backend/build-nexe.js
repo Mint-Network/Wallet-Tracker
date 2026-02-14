@@ -3,6 +3,15 @@ import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 import { mkdirSync, copyFileSync, rmSync, writeFileSync, readFileSync, existsSync } from 'fs';
 import { tmpdir } from 'os';
+import pino from 'pino';
+import pretty from 'pino-pretty';
+
+const stream = pretty({
+  colorize: true,
+  translateTime: 'SYS:standard',
+  ignore: 'pid,hostname',
+});
+const logger = pino(stream);
 
 
 const __filename = fileURLToPath(import.meta.url);
