@@ -1,10 +1,11 @@
 import { build } from 'esbuild';
 import { mkdirSync, writeFileSync, readFileSync } from 'fs';
 
+
 // Create dist folder
 mkdirSync('dist', { recursive: true });
 
-console.log('Bundling backend with esbuild to CommonJS...');
+logger.info('Bundling backend with esbuild to CommonJS...');
 
 // Bundle EVERYTHING into a single CommonJS file
 await build({
@@ -17,7 +18,7 @@ await build({
   external: [],
   sourcemap: false,
 }).catch((error) => {
-  console.error('esbuild failed:', error);
+  logger.error('esbuild failed:', error);
   process.exit(1);
 });
 
@@ -39,4 +40,4 @@ if (dotenvRequireMatch) {
 }
 writeFileSync('dist/app.js', code);
 
-console.log('✅ Bundled to dist/app.js (all server.js references removed)');
+logger.info('✅ Bundled to dist/app.js (all server.js references removed)');

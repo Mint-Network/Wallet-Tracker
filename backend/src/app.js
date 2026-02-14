@@ -17,25 +17,26 @@ const { EthRpcProvider } = require("./domain/Providers/EthRpcProvider.js");
 const { CodexRpcProvider } = require("./domain/Providers/CodexRpcProvider.js");
 const { ZeroBalanceProvider } = require("./domain/Providers/ZeroBalanceProvider.js");
 const { EthBalanceEnricher } = require("./domain/Enrichers/EthBalanceEnricher.js");
+const logger = require("./utils/logger");
 
 const app = express();
 // ---------- Composition root (DI): wire ETH strategy with balance enricher and RPC providers ----------
 const ethRpcUrl = process.env.ETH_RPC_URL;
 const codexRpcUrl = process.env.CODEX_RPC_URL;
-console.log("On the appjs file the ethRpcUrl is ", ethRpcUrl);
-console.log("On the appjs file the codexRpcUrl is ", codexRpcUrl);
+logger.info({ ethRpcUrl }, "On the appjs file the ethRpcUrl is");
+logger.info({ codexRpcUrl }, "On the appjs file the codexRpcUrl is");
 if (ethRpcUrl) {
   const ethProvider = new EthRpcProvider(ethRpcUrl);
   const codexProvider = codexRpcUrl
     ? new CodexRpcProvider(codexRpcUrl)
     : new ZeroBalanceProvider();
   if (!codexRpcUrl) {
-    console.warn("CODEX_RPC_URL not set: codexBalance will show 0.0. Set it in .env for real Codex balances.");
+    logger.warn("CODEX_RPC_URL not set: codexBalance will show 0.0. Set it in .env for real Codex balances.");
   }
   const ethBalanceEnricher = new EthBalanceEnricher(ethProvider, codexProvider);
   WalletStrategyRegistry.register("ETH", () => new EthWalletStrategy(ethBalanceEnricher));
 } else {
-  console.warn("ETH_RPC_URL not set in .env: ETH/Codex balance columns will be empty. Add ETH_RPC_URL (and optionally CODEX_RPC_URL) to enable balances.");
+  logger.warn("ETH_RPC_URL not set in .env: ETH/Codex balance columns will be empty. Add ETH_RPC_URL (and optionally CODEX_RPC_URL) to enable balances.");
 }
 
 app.use(cors());

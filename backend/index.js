@@ -4,6 +4,7 @@
  */
 const path = require("path");
 const fs = require("fs");
+const logger = require("./src/utils/logger");
 
 // For packaged executables (pkg), look for .env in the executable's directory
 // For development, use the current working directory
@@ -21,11 +22,11 @@ if (process.pkg) {
 // Try to load .env from the determined path
 if (fs.existsSync(envPath)) {
   require("dotenv").config({ path: envPath });
-  console.log(`Loaded .env from: ${envPath}`);
+  logger.info(`Loaded .env from: ${envPath}`);
 } else {
   // Fallback to default dotenv behavior (current directory)
   require("dotenv").config();
-  console.log("No .env file found, using default dotenv behavior");
+  logger.info("No .env file found, using default dotenv behavior");
 }
 
 const app = require("./src/app.js");
@@ -33,5 +34,5 @@ const app = require("./src/app.js");
 const port = process.env.PORT || 5001;
 
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  logger.info(`Server is running on port ${port}`);
 });

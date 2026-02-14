@@ -4,6 +4,7 @@ import { dirname, resolve } from 'path';
 import { mkdirSync, copyFileSync, rmSync, writeFileSync, readFileSync, existsSync } from 'fs';
 import { tmpdir } from 'os';
 
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -26,11 +27,11 @@ const targets = {
 
 const config = targets[target];
 if (!config) {
-  console.error('Invalid target. Use: win, mac-arm, or mac-intel');
+  logger.error('Invalid target. Use: win, mac-arm, or mac-intel');
   process.exit(1);
 }
 
-console.log(`Packaging with pkg for ${config.pkgTarget}...`);
+logger.info(`Packaging with pkg for ${config.pkgTarget}...`);
 
 try {
   // Temporarily remove "main": "server.js" from backend/package.json so pkg doesn't include it
@@ -45,7 +46,7 @@ try {
     delete pkg.main; // Remove main so pkg doesn't see server.js
     writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2));
     packageJsonModified = true;
-    console.log('📦 Temporarily removed "main" from package.json');
+    logger.info('📦 Temporarily removed "main" from package.json');
   }
   
   try {
@@ -76,7 +77,7 @@ try {
     try {
       const pkgCmd = `npx pkg app.js --targets ${config.pkgTarget} --output "${config.output}"`;
       execSync(pkgCmd, { stdio: 'inherit' });
-      console.log(`✅ Built: ${config.output}`);
+      logger.info(`✅ Built: ${config.output}`);
     } finally {
       process.chdir(originalCwd);
       rmSync(tempDir, { recursive: true, force: true });
@@ -85,11 +86,11 @@ try {
     // Restore original package.json
     if (packageJsonModified && originalPackageJson) {
       writeFileSync(packageJsonPath, originalPackageJson);
-      console.log('✅ Restored package.json');
+      logger.info('✅ Restored package.json');
     }
   }
 } catch (error) {
-  console.error('❌ pkg failed:', error.message);
+  logger.error('❌ pkg failed:', error.message);
   // Restore package.json on error too
   if (packageJsonModified && originalPackageJson) {
     writeFileSync(packageJsonPath, originalPackageJson);
