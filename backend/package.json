@@ -8,9 +8,10 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "build:backend:win": "node build-bundle.js && node build-nexe.js win",
-    "build:backend:mac:arm": "node build-bundle.js && node build-nexe.js mac-arm",
-    "build:backend:mac:intel": "node build-bundle.js && node build-nexe.js mac-intel"
+    "build:backend:win": "./build.sh win",
+    "build:backend:mac:arm": "./build.sh mac-arm",
+    "build:backend:mac:intel": "./build.sh mac-intel",
+    "build:backend": "echo 'Run one of: npm run build:backend:win, npm run build:backend:mac:arm, npm run build:backend:mac:intel'"
   },
   "keywords": [],
   "author": "",

@@ -1,7 +1,7 @@
 import * as bip39 from "@scure/bip39";
 import { derivePath } from "ed25519-hd-key";
-import * as nacl from "tweetnacl";
-import * as bs58 from "bs58";
+import nacl from "tweetnacl";
+import bs58 from "bs58";
 import { WalletStrategyRegistry } from "../Factory/WalletStrategyRegistry.js";
 import { IWalletStrategy } from "./IWalletStrategy.js";
 import { InputType } from "../Types/InputType.js";
@@ -19,22 +19,14 @@ export class SolWalletStrategy extends IWalletStrategy {
    * Normalise that here so the rest of the code can just call `encodeBase58`.
    */
   static encodeBase58(bytes) {
-    // 1) CommonJS style: module itself is a function -> bs58(buffer)
+    // In ESM with default import, bs58 is already the encoding function
     if (typeof bs58 === "function") {
       return bs58(bytes);
     }
 
-    // 2) Object with .encode: bs58.encode(buffer)
+    // Fallback: check if it has an .encode method
     if (bs58 && typeof bs58.encode === "function") {
       return bs58.encode(bytes);
-    }
-
-    // 3) ESM-default interop: { default: fn } or { default: { encode: fn } }
-    if (bs58 && typeof bs58.default === "function") {
-      return bs58.default(bytes);
-    }
-    if (bs58 && bs58.default && typeof bs58.default.encode === "function") {
-      return bs58.default.encode(bytes);
     }
 
     throw new Error("bs58.encode/encodeBase58 is not available – unsupported bs58 version/interop");
