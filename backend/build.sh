@@ -8,15 +8,13 @@ if [ -z "$TARGET" ]; then
   exit 1
 fi
 
+# Output names must match Rust (lib.rs get_backend_name!): wallet-backend (Unix) or wallet-backend.bat (Windows)
 case "$TARGET" in
   win)
-    OUTPUT="../frontend/src-tauri/bin/wallet-backend-x86_64-pc-windows-msvc.exe"
+    OUTPUT="../frontend/src-tauri/bin/wallet-backend.bat"
     ;;
-  mac-arm)
-    OUTPUT="../frontend/src-tauri/bin/wallet-backend-aarch64-apple-darwin"
-    ;;
-  mac-intel)
-    OUTPUT="../frontend/src-tauri/bin/wallet-backend-x86_64-apple-darwin"
+  mac-arm|mac-intel)
+    OUTPUT="../frontend/src-tauri/bin/wallet-backend"
     ;;
   *)
     echo "Invalid target. Use: win, mac-arm, or mac-intel"

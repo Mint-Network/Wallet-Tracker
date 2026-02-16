@@ -18,35 +18,39 @@ npm run dev
 
 ## Building for Tauri Packaging
 
-To build the backend for Tauri packaging, use the build script:
+The backend must be built and placed in `../frontend/src-tauri/bin/` so Tauri can bundle it when creating the app/DMG. Output names match the Rust side: `wallet-backend` (macOS/Linux), `wallet-backend.bat` (Windows).
+
+**Recommended (automatic):** From the **frontend** directory run `npm run tauri:build` (or `npm run build:all`). This runs `beforeBuildCommand`, which builds the frontend and then the backend for the current platform into `frontend/src-tauri/bin/`.
+
+**Manual build from this directory:**
 
 ```bash
-# For Windows
-npm run build:backend:win
+# Build for current platform (Node script, works on Windows too)
+npm run build:backend:current
 
-# For macOS ARM (Apple Silicon)
-npm run build:backend:mac:arm
-
-# For macOS Intel
-npm run build:backend:mac:intel
+# Or use build.sh for a specific target:
+npm run build:backend:win      # Windows → wallet-backend.bat
+npm run build:backend:mac:arm   # macOS ARM → wallet-backend
+npm run build:backend:mac:intel # macOS Intel → wallet-backend
 ```
 
 ## Build Process
 
-The build script (`build.sh`) performs the following steps:
+The build (either `build.sh` or `scripts/build-current.js`) does the following:
 
-1. **Creates a Node.js wrapper script**: A shell script (or batch file on Windows) that runs `node index.js` from the correct directory.
+1. **Creates a Node.js wrapper**: A shell script (`wallet-backend`) or batch file (`wallet-backend.bat`) that runs `node index.js` from the bin directory.
 
-2. **Copies backend files**: Copies all necessary backend source files and dependencies to the Tauri `bin` directory.
+2. **Copies backend files**: Copies `package.json`, `index.js`, and `src/` to `../frontend/src-tauri/bin/`.
 
-3. **Installs dependencies**: Runs `npm install --production` in the target directory to ensure all dependencies are available.
+3. **Installs dependencies**: Runs `npm install --production` in that directory.
 
 ## Distribution
 
-After building, the following files will be created in `../frontend/src-tauri/bin/`:
+After building, `../frontend/src-tauri/bin/` contains:
 
-- **Executable wrapper**: `wallet-backend-aarch64-apple-darwin` (or platform-specific equivalent)
-- **Backend files**: Complete Node.js application with all dependencies in `node_modules/`
+- **Wrapper**: `wallet-backend` (Unix) or `wallet-backend.bat` (Windows) — names expected by the Tauri Rust code.
+- **Backend files**: `index.js`, `src/`, `package.json`, `node_modules/`.
+- Tauri’s `resources: ["bin/**/*"]` bundles this folder into the app/DMG.
 
 ## Requirements
 
@@ -57,6 +61,6 @@ The built backend requires Node.js to be installed on the target system. The wra
 The backend looks for a `.env` file in the same directory as the executable. If not found, it uses default values.
 
 Important environment variables:
-- `PORT`: Server port (default: 5001)
+- `PORT`: Server port (default: 55001; Tauri spawns the backend with this port)
 - `ETH_RPC_URL`: Ethereum RPC URL for balance queries
 - `CODEX_RPC_URL`: Codex RPC URL for balance queries (optional)

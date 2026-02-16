@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Duration;
 use std::net::TcpStream;
@@ -39,7 +39,7 @@ macro_rules! get_backend_name {
             let name = "wallet-backend";
 
             #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
-            let name = "wallet-backend.exe";
+            let name = "wallet-backend.bat";
 
             #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
             let name = "wallet-backend";
@@ -47,6 +47,22 @@ macro_rules! get_backend_name {
             name
         }
     };
+}
+
+/// Spawn the backend process. On Windows, .bat must be run via `cmd /c`.
+fn spawn_backend(backend_path: &Path, work_dir: &Path) {
+    #[cfg(windows)]
+    let _ = Command::new("cmd")
+        .args(["/c", backend_path.as_path()])
+        .current_dir(work_dir)
+        .env("PORT", BACKEND_PORT.to_string())
+        .spawn();
+
+    #[cfg(not(windows))]
+    let _ = Command::new(backend_path)
+        .current_dir(work_dir)
+        .env("PORT", BACKEND_PORT.to_string())
+        .spawn();
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -62,10 +78,7 @@ pub fn run() {
                 let backend_path: PathBuf = resource_dir.join(backend_name);
 
                 if backend_path.is_file() {
-                    let _ = Command::new(&backend_path)
-                        .env("PORT", BACKEND_PORT.to_string())
-                        .current_dir(&resource_dir)
-                        .spawn();
+                    spawn_backend(&backend_path, &resource_dir);
                     wait_for_backend_ready();
                     return Ok(());
                 }
@@ -76,10 +89,7 @@ pub fn run() {
                 if let Some(parent) = exe_dir.parent() {
                     let alt_path = parent.join(backend_name);
                     if alt_path.is_file() {
-                        let _ = Command::new(&alt_path)
-                            .env("PORT", BACKEND_PORT.to_string())
-                            .current_dir(parent)
-                            .spawn();
+                        spawn_backend(&alt_path, parent);
                         wait_for_backend_ready();
                         return Ok(());
                     }

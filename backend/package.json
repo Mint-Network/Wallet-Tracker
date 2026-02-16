@@ -11,7 +11,8 @@
     "build:backend:win": "./build.sh win",
     "build:backend:mac:arm": "./build.sh mac-arm",
     "build:backend:mac:intel": "./build.sh mac-intel",
-    "build:backend": "echo 'Run one of: npm run build:backend:win, npm run build:backend:mac:arm, npm run build:backend:mac:intel'"
+    "build:backend:current": "node scripts/build-current.js",
+    "build:backend": "echo 'Run one of: npm run build:backend:win, npm run build:backend:mac:arm, npm run build:backend:mac:intel, or npm run build:backend:current'"
   },
   "keywords": [],
   "author": "",
