@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getBackendBaseUrl, fetchWithRetry } from "../api/backend";
 import "./AddressGeneratorPage.css";
 
 /** Number of addresses to fetch per page (fits in view without scroll). */
@@ -44,17 +45,23 @@ export default function AddressGenerator() {
     try {
       const startIdx = (pageNumber - 1) * itemsPerPage;
       const cleanedValue = inputValue.trim();
-      const res = await fetch("http://localhost:55001/api/wallet/fetch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          inputType: selectedType.toUpperCase(),
-          currency: currencyType,
-          value: cleanedValue,
-          count: itemsPerPage,
-          startIdx,
-        }),
-      });
+      const baseUrl = await getBackendBaseUrl();
+      const res = await fetchWithRetry(
+        `${baseUrl}/api/wallet/fetch`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            inputType: selectedType.toUpperCase(),
+            currency: currencyType,
+            value: cleanedValue,
+            count: itemsPerPage,
+            startIdx,
+          }),
+        },
+        3,
+        800
+      );
 
       const json: WalletFetchResponse = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to fetch data");
