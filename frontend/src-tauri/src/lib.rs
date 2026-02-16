@@ -73,18 +73,19 @@ pub fn run() {
         .setup(|app| {
             let backend_name = get_backend_name!();
 
-            // Try platform-specific backend files in resource directory
-            if let Ok(resource_dir) = app.path().resource_dir() {
-                let backend_path: PathBuf = resource_dir.join(backend_name);
+            // Try backend in resource directory (packaged app: resources are under $RESOURCE/bin/ from "bin/**/*")
+            if let Ok(resource_root) = app.path().resource_dir() {
+                let bin_dir = resource_root.join("bin");
+                let backend_path: PathBuf = bin_dir.join(backend_name);
 
                 if backend_path.is_file() {
-                    spawn_backend(&backend_path, &resource_dir);
+                    spawn_backend(&backend_path, &bin_dir);
                     wait_for_backend_ready();
                     return Ok(());
                 }
             }
 
-            // Try exe directory
+            // Try exe directory (e.g. when backend is next to the executable)
             if let Ok(exe_dir) = std::env::current_exe() {
                 if let Some(parent) = exe_dir.parent() {
                     let alt_path = parent.join(backend_name);
@@ -92,6 +93,15 @@ pub fn run() {
                         spawn_backend(&alt_path, parent);
                         wait_for_backend_ready();
                         return Ok(());
+                    }
+                    // Development: exe is in target/debug/ or target/release/, bin is at crate root (src-tauri/bin)
+                    if let Some(bin_dir) = parent.parent().and_then(|p| p.parent()).map(|p| p.join("bin")) {
+                        let dev_backend = bin_dir.join(backend_name);
+                        if dev_backend.is_file() {
+                            spawn_backend(&dev_backend, &bin_dir);
+                            wait_for_backend_ready();
+                            return Ok(());
+                        }
                     }
                 }
             }
