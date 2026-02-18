@@ -1,0 +1,184 @@
+name: Build Release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Install Rust dependencies
+        run: |
+          rustup target add x86_64-pc-windows-msvc
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Build backend for Windows
+        working-directory: ./backend
+        run: npm run build:backend:win
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Create .env file if missing
+        run: |
+          if [ ! -f backend/.env ]; then
+            echo "Creating default .env file"
+            cat > backend/.env << EOF
+          PORT=55001
+          NODE_ENV=production
+          ETH_RPC_URL=https://eth.llamarpc.com
+          CODEX_RPC_URL=https://node-mainnet.codexnetwork.org
+          EOF
+          fi
+
+      - name: Build Tauri app for Windows
+        working-directory: ./frontend
+        run: npm run tauri:build
+        env:
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+
+      - name: Copy .env to release directory
+        run: |
+          if [ -f backend/.env ]; then
+            cp backend/.env frontend/src-tauri/target/release/.env
+            echo "Copied .env to release directory"
+          fi
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-artifacts
+          path: |
+            frontend/src-tauri/target/release/wallet-tracker.exe
+            frontend/src-tauri/target/release/bundle/**/*.msi
+            frontend/src-tauri/target/release/bundle/**/*.exe
+
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Install Rust dependencies
+        run: |
+          rustup target add aarch64-apple-darwin
+          rustup target add x86_64-apple-darwin
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Build backend for macOS (ARM)
+        working-directory: ./backend
+        run: npm run build:backend:mac:arm
+
+      - name: Build backend for macOS (Intel)
+        working-directory: ./backend
+        run: npm run build:backend:mac:intel
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Create .env file if missing
+        run: |
+          if [ ! -f backend/.env ]; then
+            echo "Creating default .env file"
+            cat > backend/.env << EOF
+          PORT=55001
+          NODE_ENV=production
+          ETH_RPC_URL=https://eth.llamarpc.com
+          CODEX_RPC_URL=https://node-mainnet.codexnetwork.org
+          EOF
+          fi
+
+      - name: Build Tauri app for macOS
+        working-directory: ./frontend
+        run: npm run tauri:build
+        env:
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+
+      - name: Copy .env to release directory
+        run: |
+          if [ -f backend/.env ]; then
+            cp backend/.env frontend/src-tauri/target/release/.env
+            echo "Copied .env to release directory"
+          fi
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-artifacts
+          path: |
+            frontend/src-tauri/target/release/bundle/**/*.app
+            frontend/src-tauri/target/release/bundle/**/*.dmg
+
+  upload-release:
+    name: Upload to Release
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    
+    steps:
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-artifacts
+          path: ./artifacts/windows
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-artifacts
+          path: ./artifacts/macos
+
+      - name: Upload all release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/windows/**/*
+            artifacts/macos/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

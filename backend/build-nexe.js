@@ -66,7 +66,7 @@ try {
     // Copy ONLY the bundled file
     copyFileSync(resolve(__dirname, 'dist', 'app.js'), resolve(tempDir, 'app.js'));
     
-    // Create minimal package.json (NO "type": "module", NO "main": "server.js")
+    // Create minimal package.json with pkg configuration for pino
     const pkgJson = {
       name: 'wallet-backend',
       version: '1.0.0',
@@ -74,7 +74,13 @@ try {
       bin: 'app.js',
       pkg: {
         scripts: ['app.js'],
-        assets: []
+        assets: [
+          'node_modules/pino/**/*',
+          'node_modules/pino-pretty/**/*',
+          'node_modules/thread-stream/**/*',
+          'node_modules/real-require/**/*'
+        ],
+        targets: [config.pkgTarget]
       }
     };
     writeFileSync(resolve(tempDir, 'package.json'), JSON.stringify(pkgJson, null, 2));

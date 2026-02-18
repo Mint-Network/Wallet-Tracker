@@ -1,6 +1,6 @@
 import * as bip39 from "@scure/bip39";
 import { derivePath } from "ed25519-hd-key";
-import * as nacl from "tweetnacl";
+import nacl from "tweetnacl";
 import * as bs58 from "bs58";
 import { WalletStrategyRegistry } from "../Factory/WalletStrategyRegistry.js";
 import { IWalletStrategy } from "./IWalletStrategy.js";

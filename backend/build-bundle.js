@@ -17,6 +17,7 @@ mkdirSync('dist', { recursive: true });
 logger.info('Bundling backend with esbuild to CommonJS...');
 
 // Bundle EVERYTHING into a single CommonJS file
+// Mark pino and pino-pretty as external since they cause issues with pkg
 await build({
   entryPoints: ['index.js'],
   bundle: true,
@@ -24,7 +25,7 @@ await build({
   target: 'node18',
   format: 'cjs',
   outfile: 'dist/app.js',
-  external: [],
+  external: ['pino', 'pino-pretty'],
   sourcemap: false,
 }).catch((error) => {
   logger.error('esbuild failed:', error);
