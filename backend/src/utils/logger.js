@@ -1,59 +1,100 @@
 // Use a simple console logger for packaged builds to avoid pkg/pino issues
 // pkg has trouble bundling pino's native dependencies
+import pino from "pino";
+import pretty from "pino-pretty";
+
 const isPkg = typeof process.pkg !== 'undefined';
 
 let logger;
 
 if (isPkg) {
-  // Simple console logger for packaged builds
-  const formatMsg = (msg, level) => {
+  // Simple console logger for packaged builds with pretty JSON formatting
+  // Supports pino-style calls: logger.info({obj}, "message") or logger.info("message")
+  const formatLog = (level, ...args) => {
     const timestamp = new Date().toISOString();
-    if (typeof msg === 'object') {
-      return `[${timestamp}] [${level}] ${JSON.stringify(msg)}`;
+    let logEntry = { timestamp, level };
+    
+    // Helper to serialize Error objects properly
+    const serializeError = (err) => {
+      if (err instanceof Error) {
+        return {
+          name: err.name,
+          message: err.message,
+          stack: err.stack,
+          code: err.code,
+          ...(err.errno !== undefined && { errno: err.errno }),
+          ...(err.syscall && { syscall: err.syscall }),
+          ...(err.address && { address: err.address }),
+          ...(err.port !== undefined && { port: err.port })
+        };
+      }
+      return err;
+    };
+    
+    // Handle different call patterns:
+    // logger.info({obj}, "message") - pino style
+    // logger.info("message") - simple string
+    // logger.info({obj}) - object only
+    if (args.length === 0) {
+      return JSON.stringify(logEntry, null, 2);
     }
-    return `[${timestamp}] [${level}] ${msg}`;
+    
+    // Check if first arg is an object and second is a string (pino style)
+    if (args.length >= 2 && typeof args[0] === 'object' && args[0] !== null && typeof args[1] === 'string') {
+      const obj = args[0];
+      // Serialize any Error objects in the object
+      const serializedObj = Object.keys(obj).reduce((acc, key) => {
+        acc[key] = obj[key] instanceof Error ? serializeError(obj[key]) : obj[key];
+        return acc;
+      }, {});
+      logEntry = { ...logEntry, ...serializedObj, message: args[1] };
+    } 
+    // Check if first arg is an object
+    else if (typeof args[0] === 'object' && args[0] !== null) {
+      const obj = args[0];
+      if (obj instanceof Error) {
+        logEntry = { ...logEntry, ...serializeError(obj) };
+      } else {
+        // Serialize any Error objects nested in the object
+        const serializedObj = Object.keys(obj).reduce((acc, key) => {
+          acc[key] = obj[key] instanceof Error ? serializeError(obj[key]) : obj[key];
+          return acc;
+        }, {});
+        logEntry = { ...logEntry, ...serializedObj };
+      }
+    }
+    // First arg is a string or other primitive
+    else {
+      logEntry.message = String(args[0]);
+      // If there are more args, include them
+      if (args.length > 1) {
+        logEntry.additional = args.slice(1).map(arg => 
+          arg instanceof Error ? serializeError(arg) : arg
+        );
+      }
+    }
+    
+    // Format as pretty JSON with 2-space indentation
+    return JSON.stringify(logEntry, null, 2);
   };
   
   logger = {
-    info: (msg, ...args) => {
-      const formatted = formatMsg(msg, 'INFO');
-      if (args.length > 0) {
-        console.log(formatted, ...args);
-      } else {
-        console.log(formatted);
-      }
+    info: (...args) => {
+      console.log(formatLog('INFO', ...args));
     },
-    error: (msg, ...args) => {
-      const formatted = formatMsg(msg, 'ERROR');
-      if (args.length > 0) {
-        console.error(formatted, ...args);
-      } else {
-        console.error(formatted);
-      }
+    error: (...args) => {
+      console.error(formatLog('ERROR', ...args));
     },
-    warn: (msg, ...args) => {
-      const formatted = formatMsg(msg, 'WARN');
-      if (args.length > 0) {
-        console.warn(formatted, ...args);
-      } else {
-        console.warn(formatted);
-      }
+    warn: (...args) => {
+      console.warn(formatLog('WARN', ...args));
     },
-    debug: (msg, ...args) => {
-      const formatted = formatMsg(msg, 'DEBUG');
-      if (args.length > 0) {
-        console.log(formatted, ...args);
-      } else {
-        console.log(formatted);
-      }
+    debug: (...args) => {
+      console.log(formatLog('DEBUG', ...args));
     },
   };
 } else {
-  // Use pino for development - use dynamic import to avoid bundling issues
+  // Use pino for development
   try {
-    const pino = require("pino");
-    const pretty = require("pino-pretty");
-    
     const isProd = process.env.NODE_ENV === "production";
     const level = process.env.LOG_LEVEL || "info";
 
@@ -69,18 +110,78 @@ if (isPkg) {
   } catch (e) {
     // Fallback to console logger if pino fails to load
     console.warn("Failed to load pino, using console logger:", e.message);
-    const formatMsg = (msg, level) => {
+    const formatLog = (level, ...args) => {
       const timestamp = new Date().toISOString();
-      if (typeof msg === 'object') {
-        return `[${timestamp}] [${level}] ${JSON.stringify(msg)}`;
+      let logEntry = { timestamp, level };
+      
+      // Helper to serialize Error objects properly
+      const serializeError = (err) => {
+        if (err instanceof Error) {
+          return {
+            name: err.name,
+            message: err.message,
+            stack: err.stack,
+            code: err.code,
+            ...(err.errno !== undefined && { errno: err.errno }),
+            ...(err.syscall && { syscall: err.syscall }),
+            ...(err.address && { address: err.address }),
+            ...(err.port !== undefined && { port: err.port })
+          };
+        }
+        return err;
+      };
+      
+      // Handle different call patterns:
+      // logger.info({obj}, "message") - pino style
+      // logger.info("message") - simple string
+      // logger.info({obj}) - object only
+      if (args.length === 0) {
+        return JSON.stringify(logEntry, null, 2);
       }
-      return `[${timestamp}] [${level}] ${msg}`;
+      
+      // Check if first arg is an object and second is a string (pino style)
+      if (args.length >= 2 && typeof args[0] === 'object' && args[0] !== null && typeof args[1] === 'string') {
+        const obj = args[0];
+        // Serialize any Error objects in the object
+        const serializedObj = Object.keys(obj).reduce((acc, key) => {
+          acc[key] = obj[key] instanceof Error ? serializeError(obj[key]) : obj[key];
+          return acc;
+        }, {});
+        logEntry = { ...logEntry, ...serializedObj, message: args[1] };
+      } 
+      // Check if first arg is an object
+      else if (typeof args[0] === 'object' && args[0] !== null) {
+        const obj = args[0];
+        if (obj instanceof Error) {
+          logEntry = { ...logEntry, ...serializeError(obj) };
+        } else {
+          // Serialize any Error objects nested in the object
+          const serializedObj = Object.keys(obj).reduce((acc, key) => {
+            acc[key] = obj[key] instanceof Error ? serializeError(obj[key]) : obj[key];
+            return acc;
+          }, {});
+          logEntry = { ...logEntry, ...serializedObj };
+        }
+      }
+      // First arg is a string or other primitive
+      else {
+        logEntry.message = String(args[0]);
+        // If there are more args, include them
+        if (args.length > 1) {
+          logEntry.additional = args.slice(1).map(arg => 
+            arg instanceof Error ? serializeError(arg) : arg
+          );
+        }
+      }
+      
+      // Format as pretty JSON with 2-space indentation
+      return JSON.stringify(logEntry, null, 2);
     };
     logger = {
-      info: (msg, ...args) => console.log(formatMsg(msg, 'INFO'), ...args),
-      error: (msg, ...args) => console.error(formatMsg(msg, 'ERROR'), ...args),
-      warn: (msg, ...args) => console.warn(formatMsg(msg, 'WARN'), ...args),
-      debug: (msg, ...args) => console.log(formatMsg(msg, 'DEBUG'), ...args),
+      info: (...args) => console.log(formatLog('INFO', ...args)),
+      error: (...args) => console.error(formatLog('ERROR', ...args)),
+      warn: (...args) => console.warn(formatLog('WARN', ...args)),
+      debug: (...args) => console.log(formatLog('DEBUG', ...args)),
     };
   }
 }

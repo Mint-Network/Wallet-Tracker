@@ -3,9 +3,58 @@ name: Build Release
 on:
   release:
     types: [created]
+  # Also allow manual workflow dispatch for testing
+  workflow_dispatch:
 
 jobs:
+  check-branch:
+    name: Check Branch
+    runs-on: ubuntu-latest
+    outputs:
+      is-main: ${{ steps.check.outputs.is-main }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Check if release is from main branch
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" == "release" ]; then
+            # For releases, check the tag's commit is on main
+            TAG_NAME="${{ github.event.release.tag_name }}"
+            git fetch --tags
+            COMMIT_SHA=$(git rev-list -n 1 "$TAG_NAME" 2>/dev/null || echo "")
+            if [ -n "$COMMIT_SHA" ]; then
+              git fetch origin main
+              if git branch -r --contains "$COMMIT_SHA" | grep -q "origin/main"; then
+                echo "is-main=true" >> $GITHUB_OUTPUT
+                echo "✅ Release tag $TAG_NAME is on main branch"
+              else
+                echo "is-main=false" >> $GITHUB_OUTPUT
+                echo "⚠️ Release tag $TAG_NAME is NOT on main branch - skipping build"
+              fi
+            else
+              echo "is-main=false" >> $GITHUB_OUTPUT
+              echo "⚠️ Could not find commit for tag $TAG_NAME"
+            fi
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            # For manual dispatch, check current branch
+            if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+              echo "is-main=true" >> $GITHUB_OUTPUT
+              echo "✅ Manual trigger from main branch"
+            else
+              echo "is-main=false" >> $GITHUB_OUTPUT
+              echo "⚠️ Manual trigger NOT from main branch - skipping build"
+            fi
+          else
+            echo "is-main=false" >> $GITHUB_OUTPUT
+          fi
+
   build-windows:
+    needs: check-branch
+    if: needs.check-branch.outputs.is-main == 'true'
     name: Build Windows
     runs-on: windows-latest
     
@@ -58,9 +107,6 @@ jobs:
       - name: Build Tauri app for Windows
         working-directory: ./frontend
         run: npm run tauri:build
-        env:
-          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
 
       - name: Copy .env to release directory
         run: |
@@ -80,6 +126,8 @@ jobs:
 
   build-macos:
     name: Build macOS
+    needs: check-branch
+    if: needs.check-branch.outputs.is-main == 'true'
     runs-on: macos-latest
     
     steps:
@@ -136,9 +184,6 @@ jobs:
       - name: Build Tauri app for macOS
         working-directory: ./frontend
         run: npm run tauri:build
-        env:
-          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
 
       - name: Copy .env to release directory
         run: |
@@ -157,9 +202,11 @@ jobs:
 
   upload-release:
     name: Upload to Release
-    needs: [build-windows, build-macos]
+    needs: [check-branch, build-windows, build-macos]
     runs-on: ubuntu-latest
-    if: github.event_name == 'release'
+    if: |
+      github.event_name == 'release' && 
+      needs.check-branch.outputs.is-main == 'true'
     
     steps:
       - name: Download Windows artifacts
@@ -180,5 +227,3 @@ jobs:
           files: |
             artifacts/windows/**/*
             artifacts/macos/**/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

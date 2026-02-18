@@ -53,8 +53,27 @@ const server = app.listen(port, () => {
 });
 
 server.on("error", (err) => {
-  logger.error({ err, port, pid: process.pid }, "Server failed to start");
-  console.error(`[backend] listen error on port ${port}:`, err?.message || err);
+  if (err.code === "EADDRINUSE") {
+    const errorMsg = `Port ${port} is already in use. This usually means:
+1. Another backend instance is already running (check Task Manager for wallet-backend.exe or node processes)
+2. The Tauri app already started the backend automatically
+3. Another application is using port ${port}
+
+To fix:
+- If running the Tauri app: Close it first, then try again
+- If running backend manually: Stop any other backend instances
+- To find what's using the port: Run "netstat -ano | findstr :${port}" (Windows) or "lsof -i :${port}" (macOS/Linux)
+- To kill the process: Use Task Manager (Windows) or kill the PID shown by netstat/lsof`;
+    
+    logger.error({ err, port, pid: process.pid }, "Server failed to start - port already in use");
+    console.error(`\n[backend] ❌ Port ${port} is already in use!\n`);
+    console.error(errorMsg);
+    console.error(`\n[backend] Error details:`, err?.message || err);
+  } else {
+    logger.error({ err, port, pid: process.pid }, "Server failed to start");
+    console.error(`[backend] listen error on port ${port}:`, err?.message || err);
+  }
+  process.exit(1);
 });
 
 // Keep the process alive
