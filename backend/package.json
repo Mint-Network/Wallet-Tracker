@@ -9,8 +9,8 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "build:backend:win": "node scripts/build-current.js",
-    "build:backend:mac:arm": "./build.sh mac-arm",
-    "build:backend:mac:intel": "./build.sh mac-intel",
+    "build:backend:mac:arm": "node scripts/build-mac.js arm",
+    "build:backend:mac:intel": "node scripts/build-mac.js intel",
     "build:backend:current": "node scripts/build-current.js",
     "build:backend": "echo 'Run one of: npm run build:backend:win, npm run build:backend:mac:arm, npm run build:backend:mac:intel, or npm run build:backend:current'"
   },
