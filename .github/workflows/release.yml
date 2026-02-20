@@ -1,0 +1,309 @@
+name: Build Release
+
+on:
+  release:
+    types: [created]
+  # Also allow manual workflow dispatch for testing
+  workflow_dispatch:
+  # Trigger on push to main (for testing builds)
+  push:
+    branches:
+      - main
+
+jobs:
+  check-branch:
+    name: Check Branch
+    runs-on: ubuntu-latest
+    outputs:
+      is-main: ${{ steps.check.outputs.is-main }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Check if release is from main branch
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" == "release" ]; then
+            # For releases, check the tag's commit is on main
+            TAG_NAME="${{ github.event.release.tag_name }}"
+            git fetch --tags
+            COMMIT_SHA=$(git rev-list -n 1 "$TAG_NAME" 2>/dev/null || echo "")
+            if [ -n "$COMMIT_SHA" ]; then
+              git fetch origin main
+              if git branch -r --contains "$COMMIT_SHA" | grep -q "origin/main"; then
+                echo "is-main=true" >> $GITHUB_OUTPUT
+                echo "✅ Release tag $TAG_NAME is on main branch"
+              else
+                echo "is-main=false" >> $GITHUB_OUTPUT
+                echo "⚠️ Release tag $TAG_NAME is NOT on main branch - skipping build"
+              fi
+            else
+              echo "is-main=false" >> $GITHUB_OUTPUT
+              echo "⚠️ Could not find commit for tag $TAG_NAME"
+            fi
+          elif [ "${{ github.event_name }}" == "push" ]; then
+            # For push events, check if it's main branch
+            if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+              echo "is-main=true" >> $GITHUB_OUTPUT
+              echo "✅ Push to main branch - building artifacts"
+            else
+              echo "is-main=false" >> $GITHUB_OUTPUT
+              echo "⚠️ Push NOT to main branch - skipping build"
+            fi
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            # For manual dispatch, check current branch
+            if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+              echo "is-main=true" >> $GITHUB_OUTPUT
+              echo "✅ Manual trigger from main branch"
+            else
+              echo "is-main=false" >> $GITHUB_OUTPUT
+              echo "⚠️ Manual trigger NOT from main branch - skipping build"
+            fi
+          else
+            echo "is-main=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Unknown event type: ${{ github.event_name }}"
+          fi
+
+  build-windows:
+    needs: check-branch
+    if: needs.check-branch.outputs.is-main == 'true'
+    name: Build Windows
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Install Rust dependencies
+        run: |
+          rustup target add x86_64-pc-windows-msvc
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Build backend for Windows
+        working-directory: ./backend
+        run: npm run build:backend:win
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Generate icons
+        working-directory: ./frontend
+        run: node scripts/generate-icons.js
+
+      - name: Create .env file if missing
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "backend/.env")) {
+            Write-Host "Creating default .env file"
+            @"
+          PORT=55001
+          NODE_ENV=production
+          ETH_RPC_URL=https://eth.llamarpc.com
+          CODEX_RPC_URL=https://node-mainnet.codexnetwork.org
+          "@ | Out-File -FilePath "backend/.env" -Encoding utf8
+          }
+
+      - name: Copy .env file for resource bundling
+        working-directory: ./frontend
+        run: node scripts/copy-env.js
+
+      - name: Build Tauri app for Windows
+        working-directory: ./frontend
+        run: npm run tauri:build
+
+      - name: Copy backend executable and .env to bundle directory
+        shell: pwsh
+        run: |
+          $bundleDir = "frontend/src-tauri/target/release/bundle/msi/Wallet Tracker_1.0.1_x64_en-US"
+          if (-not (Test-Path $bundleDir)) {
+            # Try NSIS installer directory
+            $bundleDir = "frontend/src-tauri/target/release/bundle/nsis"
+            if (-not (Test-Path $bundleDir)) {
+              Write-Host "Bundle directory not found, trying release directory"
+              $bundleDir = "frontend/src-tauri/target/release"
+            }
+          }
+          
+          # Copy backend executable
+          $backendExe = "frontend/src-tauri/bin/wallet-backend-x86_64-pc-windows-msvc.exe"
+          if (Test-Path $backendExe) {
+            Copy-Item $backendExe -Destination "$bundleDir/wallet-backend.exe" -Force
+            Write-Host "✅ Copied backend executable to bundle directory"
+          } else {
+            Write-Host "⚠️  Backend executable not found at $backendExe"
+          }
+          
+          # Copy .env file
+          if (Test-Path "backend/.env") {
+            Copy-Item "backend/.env" -Destination "$bundleDir/.env" -Force
+            Write-Host "✅ Copied .env to bundle directory"
+          } else {
+            Write-Host "⚠️  .env file not found"
+          }
+          
+          # Also copy to release directory for standalone exe
+          if (Test-Path "frontend/src-tauri/target/release") {
+            if (Test-Path $backendExe) {
+              Copy-Item $backendExe -Destination "frontend/src-tauri/target/release/wallet-backend.exe" -Force
+            }
+            if (Test-Path "backend/.env") {
+              Copy-Item "backend/.env" -Destination "frontend/src-tauri/target/release/.env" -Force
+            }
+          }
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-artifacts
+          path: |
+            frontend/src-tauri/target/release/wallet-tracker.exe
+            frontend/src-tauri/target/release/wallet-backend.exe
+            frontend/src-tauri/target/release/.env
+            frontend/src-tauri/target/release/bundle/**/*.msi
+            frontend/src-tauri/target/release/bundle/**/*.exe
+
+  build-macos:
+    name: Build macOS
+    needs: check-branch
+    if: needs.check-branch.outputs.is-main == 'true'
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Install Rust dependencies
+        run: |
+          rustup target add aarch64-apple-darwin
+          rustup target add x86_64-apple-darwin
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Build backend for macOS (ARM)
+        working-directory: ./backend
+        run: npm run build:backend:mac:arm
+
+      - name: Build backend for macOS (Intel)
+        working-directory: ./backend
+        run: npm run build:backend:mac:intel
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Generate icons
+        working-directory: ./frontend
+        run: node scripts/generate-icons.js
+
+      - name: Create .env file if missing
+        run: |
+          if [ ! -f backend/.env ]; then
+            echo "Creating default .env file"
+            cat > backend/.env << EOF
+          PORT=55001
+          NODE_ENV=production
+          ETH_RPC_URL=https://eth.llamarpc.com
+          CODEX_RPC_URL=https://node-mainnet.codexnetwork.org
+          EOF
+          fi
+
+      - name: Copy .env file for resource bundling
+        working-directory: ./frontend
+        run: node scripts/copy-env.js
+
+      - name: Build Tauri app for macOS
+        working-directory: ./frontend
+        run: npm run tauri build -- --bundles app,dmg
+
+      - name: Copy .env to release directory
+        run: |
+          if [ -f backend/.env ]; then
+            cp backend/.env frontend/src-tauri/target/release/.env
+            echo "Copied .env to release directory"
+          fi
+
+      - name: List build output directory
+        run: |
+          echo "Checking build output directory structure..."
+          if [ -d "frontend/src-tauri/target/release/bundle" ]; then
+            find frontend/src-tauri/target/release/bundle -type f -name "*.app" -o -name "*.dmg" | head -20
+            echo "---"
+            ls -laR frontend/src-tauri/target/release/bundle/ || true
+          else
+            echo "Bundle directory does not exist!"
+            echo "Checking release directory..."
+            ls -la frontend/src-tauri/target/release/ || true
+          fi
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-artifacts
+          path: |
+            frontend/src-tauri/target/release/bundle/**/*.app
+            frontend/src-tauri/target/release/bundle/**/*.dmg
+          if-no-files-found: warn
+
+  upload-release:
+    name: Upload to Release
+    needs: [check-branch, build-windows, build-macos]
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'release' && 
+      needs.check-branch.outputs.is-main == 'true'
+    
+    steps:
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-artifacts
+          path: ./artifacts/windows
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-artifacts
+          path: ./artifacts/macos
+
+      - name: Upload all release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/windows/**/*
+            artifacts/macos/**/*
