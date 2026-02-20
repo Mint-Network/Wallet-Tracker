@@ -23,8 +23,6 @@ type WalletFetchResponse = {
   error?: string;
 };
 
-/** Backend API base URL (same port the desktop app's backend uses). */
-const API_BASE = "http://127.0.0.1:55001";
 const REQUEST_TIMEOUT_MS = 30000;
 
 /**
@@ -104,8 +102,6 @@ export default function AddressGenerator() {
     setError(null);
     setCurrentPage(pageNumber);
 
-    const startIdx = (pageNumber - 1) * itemsPerPage;
-    const cleanedValue = inputValue.trim();
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
