@@ -8,7 +8,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "build:backend:win": "./build.sh win",
+    "build:backend:win": "node scripts/build-current.js",
     "build:backend:mac:arm": "./build.sh mac-arm",
     "build:backend:mac:intel": "./build.sh mac-intel",
     "build:backend:current": "node scripts/build-current.js",
