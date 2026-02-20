@@ -129,18 +129,6 @@ export default function AddressGenerator() {
         3,
         800
       );
-      const res = await fetch(`${API_BASE}/api/wallet/fetch`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          inputType: selectedType.toUpperCase(),
-          currency: currencyType,
-          value: cleanedValue,
-          count: itemsPerPage,
-          startIdx,
-        }),
-        signal: controller.signal,
-      });
 
       clearTimeout(timeoutId);
 

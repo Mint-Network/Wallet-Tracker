@@ -13,12 +13,9 @@
     "tauri:dev": "tauri dev",
     "tauri:build": "node scripts/copy-env.js && tauri build",
     "test:release": "npm run tauri:build && echo Built! Run: .\\src-tauri\\target\\release\\wallet-tracker.exe",
-    "test:run": "powershell -Command \"Start-Process -FilePath '.\\src-tauri\\target\\release\\wallet-tracker.exe' -WorkingDirectory '.\\src-tauri\\target\\release'\""
-    "tauri:build": "tauri build",
+    "test:run": "powershell -Command \"Start-Process -FilePath '.\\src-tauri\\target\\release\\wallet-tracker.exe' -WorkingDirectory '.\\src-tauri\\target\\release'\"",
     "build:backend": "cd ../backend && npm run build:backend:current",
-    "build:all": "npm run build:backend && npm run tauri:build",
-    "test:release": "npm run build:all && echo Built! Run the .app file from src-tauri/target/release/bundle/macos/",
-    "test:run": "open src-tauri/target/release/bundle/macos/Wallet\\ Tracker.app"
+    "build:all": "npm run build:backend && npm run tauri:build"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.10.1",

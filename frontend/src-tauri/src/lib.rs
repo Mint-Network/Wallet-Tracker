@@ -5,6 +5,14 @@ use tauri::Manager;
 use tauri_plugin_shell::ShellExt;
 use std::net::TcpStream;
 
+const BACKEND_PORT: u16 = 55001;
+
+/// Tauri command: returns the backend API base URL for the frontend.
+#[tauri::command]
+fn get_backend_url() -> String {
+    format!("http://127.0.0.1:{}", BACKEND_PORT)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -259,6 +267,10 @@ pub fn run() {
             // 3) Try exe directory (most reliable for standalone exe)
             if let Ok(exe_dir) = std::env::current_exe() {
                 if let Some(parent) = exe_dir.parent() {
+                    #[cfg(windows)]
+                    let backend_name = "wallet-backend.exe";
+                    #[cfg(not(windows))]
+                    let backend_name = "wallet-backend";
                     let alt_path = parent.join(backend_name);
                     if alt_path.is_file() {
                         eprintln!("Attempting to start backend from exe directory: {:?}", alt_path);

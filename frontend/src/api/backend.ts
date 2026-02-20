@@ -16,7 +16,7 @@ export async function getBackendBaseUrl(): Promise<string> {
 
   try {
     const { invoke } = await import("@tauri-apps/api/core");
-    const url = await invoke<string>("get_backend_url");
+    const url = (await invoke("get_backend_url")) as string;
     cachedBaseUrl = url || DEFAULT_BACKEND_URL;
   } catch {
     cachedBaseUrl =
