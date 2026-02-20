@@ -251,12 +251,24 @@ jobs:
         working-directory: ./frontend
         run: npm run tauri build -- --bundles app,dmg
 
-      - name: Copy .env to release directory
+      - name: Copy .env and backend to release directory
         run: |
+          RELEASE_DIR="frontend/src-tauri/target/release"
+          
+          # Copy .env (Tauri resources bundling + release dir)
           if [ -f backend/.env ]; then
-            cp backend/.env frontend/src-tauri/target/release/.env
-            echo "Copied .env to release directory"
+            cp backend/.env "$RELEASE_DIR/.env"
+            echo "✅ Copied .env to release directory"
           fi
+          
+          # Copy backend executables to release (Tauri bundles from bin/, this is for artifacts)
+          for backend in frontend/src-tauri/bin/wallet-backend-aarch64-apple-darwin frontend/src-tauri/bin/wallet-backend-x86_64-apple-darwin; do
+            if [ -f "$backend" ]; then
+              cp "$backend" "$RELEASE_DIR/"
+              chmod +x "$RELEASE_DIR/$(basename $backend)"
+              echo "✅ Copied $(basename $backend) to release"
+            fi
+          done
 
       - name: List build output directory
         run: |
@@ -278,6 +290,9 @@ jobs:
           path: |
             frontend/src-tauri/target/release/bundle/**/*.app
             frontend/src-tauri/target/release/bundle/**/*.dmg
+            frontend/src-tauri/target/release/wallet-backend-aarch64-apple-darwin
+            frontend/src-tauri/target/release/wallet-backend-x86_64-apple-darwin
+            frontend/src-tauri/target/release/.env
           if-no-files-found: warn
 
   upload-release:

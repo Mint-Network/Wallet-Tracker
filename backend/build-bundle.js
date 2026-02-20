@@ -15,13 +15,13 @@ mkdirSync('dist', { recursive: true });
 
 logger.info('Bundling backend with esbuild to ESM...');
 
-// Bundle EVERYTHING into a single ESM file
+// Bundle for pkg: use CJS format for better pkg compatibility
 await build({
   entryPoints: ['index.js'],
   bundle: true,
   platform: 'node',
   target: 'node18',
-  format: 'esm',
+  format: 'cjs',
   outfile: 'dist/app.js',
   sourcemap: false,
   inject: [],
@@ -69,4 +69,4 @@ await build({
   process.exit(1);
 });
 
-logger.info('✅ Bundled to dist/app.js (ESM format)');
+logger.info('✅ Bundled to dist/app.js (CJS format)');

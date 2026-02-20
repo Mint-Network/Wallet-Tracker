@@ -1,7 +1,9 @@
 import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
-import { mkdirSync, copyFileSync, rmSync, writeFileSync, readFileSync, existsSync, readdirSync, statSync } from 'fs';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+import { mkdirSync, copyFileSync, rmSync, writeFileSync, readFileSync, existsSync } from 'fs';
 import { tmpdir } from 'os';
 import pino from 'pino';
 import pretty from 'pino-pretty';
@@ -13,30 +15,42 @@ const stream = pretty({
 });
 const logger = pino(stream);
 
-const target = process.argv[2];
+let target = process.argv[2];
 
-const targets = {
-  'win': { 
-    nexeTarget: 'windows-x64-18.5.0',
-    output: '../frontend/src-tauri/bin/wallet-backend-x86_64-pc-windows-msvc.exe'
-  },
-  'mac-arm': { 
-    nexeTarget: 'mac-x64-18.5.0',
-    output: '../frontend/src-tauri/bin/wallet-backend-aarch64-apple-darwin'
-  },
-  'mac-intel': { 
-    nexeTarget: 'mac-x64-18.5.0',
-    output: '../frontend/src-tauri/bin/wallet-backend-x86_64-apple-darwin'
+// Resolve "current" to platform-specific target
+if (target === 'current') {
+  const platform = process.platform;
+  const arch = process.arch;
+  if (platform === 'win32') {
+    target = 'win';
+  } else if (platform === 'darwin') {
+    target = arch === 'arm64' ? 'mac-arm' : 'mac-intel';
+  } else {
+    logger.error('Unsupported platform for current:', platform, arch);
+    process.exit(1);
   }
+}
+
+const pkgTargets = {
+  'win': 'node18-win-x64',
+  'mac-arm': 'node18-macos-arm64',
+  'mac-intel': 'node18-macos-x64'
 };
 
-const config = targets[target];
-if (!config) {
-  logger.error('Invalid target. Use: win, mac-arm, or mac-intel');
+const outputs = {
+  'win': resolve(__dirname, '../frontend/src-tauri/bin/wallet-backend-x86_64-pc-windows-msvc.exe'),
+  'mac-arm': resolve(__dirname, '../frontend/src-tauri/bin/wallet-backend-aarch64-apple-darwin'),
+  'mac-intel': resolve(__dirname, '../frontend/src-tauri/bin/wallet-backend-x86_64-apple-darwin')
+};
+
+const pkgTarget = pkgTargets[target];
+const outputPath = outputs[target];
+if (!pkgTarget || !outputPath) {
+  logger.error('Invalid target. Use: win, mac-arm, mac-intel, or current');
   process.exit(1);
 }
 
-logger.info(`Packaging with pkg for ${config.pkgTarget}...`);
+logger.info(`Packaging with pkg for ${pkgTarget}...`);
 
 // Declare these outside try block so they're accessible in catch
 const packageJsonPath = resolve(__dirname, 'package.json');
@@ -61,42 +75,8 @@ try {
     const tempDir = resolve(tmpdir(), `pkg-build-${Date.now()}`);
     mkdirSync(tempDir, { recursive: true });
     
-    // Copy ONLY the bundled file
+    // Copy ONLY the bundled file (all deps are bundled, no pino at runtime)
     copyFileSync(resolve(__dirname, 'dist', 'app.js'), resolve(tempDir, 'app.js'));
-    
-    // Copy pino and its dependencies to temp directory so pkg can find them
-    const nodeModulesSrc = resolve(__dirname, 'node_modules');
-    const nodeModulesDest = resolve(tempDir, 'node_modules');
-    mkdirSync(nodeModulesDest, { recursive: true });
-    
-    const pinoDeps = ['pino', 'pino-pretty', 'thread-stream', 'real-require', 'pino-std-serializers', 'fast-safe-stringify', 'sonic-boom', 'flatstr'];
-    
-    const copyDir = (src, dest) => {
-      mkdirSync(dest, { recursive: true });
-      const entries = readdirSync(src, { withFileTypes: true });
-      for (const entry of entries) {
-        const srcPath = resolve(src, entry.name);
-        const destPath = resolve(dest, entry.name);
-        if (entry.isDirectory()) {
-          copyDir(srcPath, destPath);
-        } else {
-          copyFileSync(srcPath, destPath);
-        }
-      }
-    };
-    
-    for (const dep of pinoDeps) {
-      const srcPath = resolve(nodeModulesSrc, dep);
-      const destPath = resolve(nodeModulesDest, dep);
-      if (existsSync(srcPath)) {
-        if (statSync(srcPath).isDirectory()) {
-          copyDir(srcPath, destPath);
-        } else {
-          copyFileSync(srcPath, destPath);
-        }
-        logger.info(`Copied ${dep} to temp directory`);
-      }
-    }
     
     // Create minimal package.json with pkg configuration
     const pkgJson = {
@@ -106,19 +86,22 @@ try {
       bin: 'app.js',
       pkg: {
         scripts: ['app.js'],
-        targets: [config.pkgTarget]
+        targets: [pkgTarget]
       }
     };
     writeFileSync(resolve(tempDir, 'package.json'), JSON.stringify(pkgJson, null, 2));
     
-    // Run pkg from temp directory
+    // Ensure output directory exists
+    mkdirSync(resolve(__dirname, '../frontend/src-tauri/bin'), { recursive: true });
+    
+    // Run pkg from temp directory (use absolute path for output)
     const originalCwd = process.cwd();
     process.chdir(tempDir);
     
     try {
-      const pkgCmd = `npx pkg app.js --targets ${config.pkgTarget} --output "${config.output}"`;
+      const pkgCmd = `npx pkg app.js --targets ${pkgTarget} --output "${outputPath}"`;
       execSync(pkgCmd, { stdio: 'inherit' });
-      logger.info(`✅ Built: ${config.output}`);
+      logger.info(`✅ Built: ${outputPath}`);
     } finally {
       process.chdir(originalCwd);
       rmSync(tempDir, { recursive: true, force: true });
