@@ -1,6 +1,6 @@
 /**
- * Post-build script to copy backend bin directory contents to the app bundle's MacOS directory
- * This ensures all backend files are in the same location as the wrapper script
+ * Post-build script to copy .env file to the app bundle's MacOS directory
+ * The pkg binary is self-contained, so we only need to copy .env
  */
 import { existsSync, cpSync, readdirSync } from 'fs';
 import { join } from 'path';
@@ -50,39 +50,21 @@ if (!existsSync(macosDir)) {
   process.exit(1);
 }
 
-// Copy all contents from bin directory to MacOS directory
-console.log('📋 Copying backend files to MacOS directory...');
+// Copy only the .env file (pkg binary is self-contained)
+console.log('📋 Copying .env file to MacOS directory...');
 
 try {
-  // Read all items in bin directory
-  const items = readdirSync(binDir, { withFileTypes: true });
-  
-  for (const item of items) {
-    const srcPath = join(binDir, item.name);
-    const destPath = join(macosDir, item.name);
-    
-    // Skip the wrapper script itself (it's already there from externalBin)
-    if (item.name === 'wallet-backend' || 
-        item.name === 'wallet-backend-aarch64-apple-darwin' ||
-        item.name === 'wallet-backend-x86_64-apple-darwin') {
-      console.log(`  ⏭️  Skipping wrapper script: ${item.name}`);
-      continue;
-    }
-    
-    if (item.isDirectory()) {
-      // Copy directory recursively
-      cpSync(srcPath, destPath, { recursive: true });
-      console.log(`  ✅ Copied directory: ${item.name}`);
-    } else if (item.isFile()) {
-      // Copy file
-      cpSync(srcPath, destPath);
-      console.log(`  ✅ Copied file: ${item.name}`);
-    }
+  const envFile = join(binDir, '.env');
+  if (existsSync(envFile)) {
+    cpSync(envFile, join(macosDir, '.env'));
+    console.log('✅ Copied .env file to MacOS directory');
+  } else {
+    console.warn('⚠️  .env file not found in bin directory');
   }
-  
-  console.log(`✅ Successfully copied backend files to ${macosDir}`);
-  console.log('📝 All backend files are now in the same directory as the wrapper script');
+
+  console.log('✅ Post-build complete');
+  console.log('📝 The pkg binary is self-contained and does not need external files');
 } catch (error) {
-  console.error('❌ Failed to copy backend files:', error.message);
+  console.error('❌ Failed to copy .env file:', error.message);
   process.exit(1);
 }
