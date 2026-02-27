@@ -8,13 +8,15 @@ if [ -z "$TARGET" ]; then
   exit 1
 fi
 
-# Output names must match Rust (lib.rs get_backend_name!): wallet-backend (Unix) or wallet-backend.bat (Windows)
 case "$TARGET" in
   win)
     OUTPUT="../frontend/src-tauri/bin/wallet-backend.bat"
     ;;
-  mac-arm|mac-intel)
-    OUTPUT="../frontend/src-tauri/bin/wallet-backend"
+  mac-arm)
+    OUTPUT="../frontend/src-tauri/bin/wallet-backend-aarch64-apple-darwin"
+    ;;
+  mac-intel)
+    OUTPUT="../frontend/src-tauri/bin/wallet-backend-x86_64-apple-darwin"
     ;;
   *)
     echo "Invalid target. Use: win, mac-arm, or mac-intel"
@@ -28,21 +30,23 @@ echo "Building for $TARGET..."
 echo "Step 1: Creating Node.js wrapper script..."
 
 if [ "$TARGET" = "win" ]; then
-  # Create Windows batch wrapper
   cat > "$OUTPUT" << 'EOFBAT'
 @echo off
 setlocal
-set SCRIPT_DIR=%~dp0
-cd /d "%SCRIPT_DIR%"
-node index.js
+cd /d "%~dp0"
+if defined NODE_BIN (
+  "%NODE_BIN%" index.js
+) else (
+  node index.js
+)
 EOFBAT
 else
   # Create Unix shell wrapper
   cat > "$OUTPUT" << 'EOFSH'
 #!/bin/bash
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "$SCRIPT_DIR"
-node index.js
+cd "$(dirname "$0")"
+NODE_BIN="${NODE_BIN:-node}"
+exec "$NODE_BIN" index.js
 EOFSH
   chmod +x "$OUTPUT"
 fi
