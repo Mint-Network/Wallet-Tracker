@@ -4,7 +4,7 @@
   "productName": "Wallet Tracker",
   "version": "1.0.1",
   "build": {
-    "beforeDevCommand": "npm run dev:web",
+    "beforeDevCommand": "node scripts/copy-env.js && npm run dev:web",
     "devUrl": "http://localhost:5173",
     "beforeBuildCommand": "node scripts/copy-env.js && npm run build && npm run build:backend",
     "frontendDist": "../dist"

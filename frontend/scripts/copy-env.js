@@ -2,7 +2,7 @@
  * Pre-build script to copy .env file to Tauri directory
  * This ensures the .env file is available when bundled
  */
-import { copyFileSync, existsSync, cpSync } from 'fs';
+import { copyFileSync, existsSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -30,5 +30,13 @@ if (existsSync(backendEnv)) {
     process.exit(1);
   }
 } else {
-  console.warn('⚠️  backend/.env not found - backend will use defaults');
+  console.warn('⚠️  backend/.env not found - creating minimal .env for Tauri resource path');
+  const minimal = 'PORT=55001\nNODE_ENV=development\n';
+  try {
+    writeFileSync(tauriEnv, minimal);
+    console.log('✅ Created minimal .env in Tauri directory');
+  } catch (e) {
+    console.error('❌ Failed to create .env:', e.message);
+    process.exit(1);
+  }
 }

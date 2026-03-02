@@ -97,10 +97,13 @@ cd backend && npm install
 npm run dev
 
 # Frontend (new terminal) — opens Tauri desktop app
-cd frontend && npm install && npm run dev
+cd frontend && npm install
+# First time (or after clone): build the embedded backend binary for your OS
+npm run build:backend
+npm run dev
 ```
 
-The desktop app window opens automatically. For browser-only, use `npm run dev:web` in the frontend and open **http://localhost:5173**.
+The desktop app window opens automatically. For browser-only, use `npm run dev:web` in the frontend and open **http://localhost:5173**. To build the backend and start the desktop app in one step, use **`npm run dev:desktop`**.
 
 ---
 
@@ -135,10 +138,12 @@ In a **new terminal**, from the project root:
 ```bash
 cd frontend
 npm install
+# First time: build the backend sidecar binary for your platform (required for Tauri desktop app)
+npm run build:backend
 npm run dev
 ```
 
-**`npm run dev`** starts the **Tauri desktop app** (Vite + native window). For browser-only, run **`npm run dev:web`** and open **http://localhost:5173**.
+**`npm run dev`** starts the **Tauri desktop app** (Vite + native window). If the sidecar binary is missing, run **`npm run build:backend`** from the frontend folder first (or use **`npm run dev:desktop`** to build and start in one step). For browser-only, run **`npm run dev:web`** and open **http://localhost:5173**.
 
 ### 4. Use the app
 

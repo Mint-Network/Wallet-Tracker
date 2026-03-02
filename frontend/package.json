@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tauri dev",
+    "dev:desktop": "npm run build:backend && tauri dev",
     "dev:web": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
