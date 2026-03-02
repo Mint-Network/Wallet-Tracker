@@ -373,6 +373,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           name: Wallet Tracker ${{ steps.version.outputs.version }}
           draft: true
           body: |
@@ -383,4 +384,3 @@ jobs:
           files: |
             artifacts/windows/**/*
             artifacts/macos/**/*
-          make_latest: true
