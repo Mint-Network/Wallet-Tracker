@@ -299,13 +299,12 @@ jobs:
     name: Upload to Release
     needs: [check-branch, build-windows, build-macos]
     runs-on: ubuntu-latest
-    # Run when both builds succeed: on release (created), push to main, or manual dispatch
+    # Run when both builds succeed for a GitHub Release (manual)
     if: |
-      always() &&
       needs.check-branch.outputs.is-main == 'true' &&
       needs.build-windows.result == 'success' &&
       needs.build-macos.result == 'success' &&
-      (github.event_name == 'release' || github.event_name == 'workflow_dispatch' || github.event_name == 'push')
+      github.event_name == 'release'
     
     steps:
       - name: Checkout code
