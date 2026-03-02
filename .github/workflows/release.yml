@@ -334,6 +334,30 @@ jobs:
           name: macos-artifacts
           path: ./artifacts/macos
 
+      - name: Delete existing release assets (avoid 422 already_exists)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" == "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          else
+            TAG="${{ steps.version.outputs.tag }}"
+          fi
+          echo "Release tag: $TAG"
+          RELEASE_ID=$(curl -sS -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/${TAG}" | jq -r '.id // empty')
+          if [ -n "$RELEASE_ID" ]; then
+            echo "Deleting existing assets for release $RELEASE_ID..."
+            curl -sS -H "Authorization: token $GITHUB_TOKEN" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets" | jq -r '.[].id' | while read -r aid; do
+              [ -n "$aid" ] && curl -sS -X DELETE -H "Authorization: token $GITHUB_TOKEN" \
+                "https://api.github.com/repos/${{ github.repository }}/releases/assets/$aid" && echo "  Deleted asset $aid"
+            done
+            echo "Done."
+          else
+            echo "No existing release for tag $TAG (or tag not created yet)."
+          fi
+
       - name: Upload to Release (release event)
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v1
