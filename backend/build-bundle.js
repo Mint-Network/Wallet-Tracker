@@ -20,9 +20,9 @@ await build({
   entryPoints: ['index.js'],
   bundle: true,
   platform: 'node',
-  target: 'node18',
+  target: 'node22',
   format: 'cjs',
-  outfile: 'dist/app.js',
+  outfile: 'dist/app.cjs',
   sourcemap: false,
   inject: [],
   banner: {
@@ -69,4 +69,4 @@ await build({
   process.exit(1);
 });
 
-logger.info('✅ Bundled to dist/app.js (CJS format)');
+logger.info('✅ Bundled to dist/app.cjs (CJS format)');

@@ -32,9 +32,9 @@ if (target === 'current') {
 }
 
 const pkgTargets = {
-  'win': 'node18-win-x64',
-  'mac-arm': 'node18-macos-arm64',
-  'mac-intel': 'node18-macos-x64'
+  'win': 'node22-win-x64',
+  'mac-arm': 'node22-macos-arm64',
+  'mac-intel': 'node22-macos-x64'
 };
 
 const outputs = {
@@ -76,7 +76,7 @@ try {
     mkdirSync(tempDir, { recursive: true });
     
     // Copy ONLY the bundled file (all deps are bundled, no pino at runtime)
-    copyFileSync(resolve(__dirname, 'dist', 'app.js'), resolve(tempDir, 'app.js'));
+    copyFileSync(resolve(__dirname, 'dist', 'app.cjs'), resolve(tempDir, 'app.js'));
     
     // Create minimal package.json with pkg configuration
     const pkgJson = {
@@ -99,7 +99,7 @@ try {
     process.chdir(tempDir);
     
     try {
-      const pkgCmd = `npx pkg app.js --targets ${pkgTarget} --output "${outputPath}"`;
+      const pkgCmd = `npx --yes @yao-pkg/pkg app.js --targets ${pkgTarget} --output "${outputPath}"`;
       execSync(pkgCmd, { stdio: 'inherit' });
       logger.info(`✅ Built: ${outputPath}`);
     } finally {
