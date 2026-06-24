@@ -38,7 +38,7 @@ app.use((req, res, next) => {
 });
 // ---------- Composition root (DI): wire ETH strategy with balance enricher and RPC providers ----------
 // Hard-code RPC URLs so balances work in packaged builds without relying on environment variables.
-const ETH_RPC_URL = "https://eth.llamarpc.com";
+const ETH_RPC_URL = "https://ethereum-mainnet.core.chainstack.com/b74a45ff3960368db0ca1295eb254647";
 const CODEX_RPC_URL = "https://node-mainnet.codexnetwork.org";
 
 logger.info(

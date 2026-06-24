@@ -3,7 +3,7 @@ import logger from "../../utils/logger.js";
 
 // Hard-coded default Ethereum RPC URL for balance lookups.
 // This avoids any dependency on process.env.ETH_RPC_URL in packaged builds.
-const DEFAULT_ETH_RPC_URL = "https://eth.llamarpc.com";
+const DEFAULT_ETH_RPC_URL = "https://ethereum-mainnet.core.chainstack.com/b74a45ff3960368db0ca1295eb254647";
 
 /**
  * Ethereum RPC provider used to fetch balances.
